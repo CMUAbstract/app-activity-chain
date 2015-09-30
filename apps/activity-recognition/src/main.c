@@ -150,9 +150,6 @@ void initializeHardware()
 
     setupDflt_IO();
 
-    PRXEOUT |=
-        PIN_RX_EN; /** TODO: enable PIN_RX_EN only when needed in the future */
-
     // set clock speed to 4 MHz
     CSCTL0_H = 0xA5;
     CSCTL1 = DCOFSEL0 | DCOFSEL1;
