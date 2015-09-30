@@ -163,13 +163,13 @@ void initializeHardware()
     P4DIR |= BIT0;
     PJDIR |= BIT6;
 
-#i  f defined(USE_LEDS) && defined(FLASH_ON_BOOT)
+#if defined(USE_LEDS) && defined(FLASH_ON_BOOT)
     P4OUT |= BIT0;
     PJOUT |= BIT6;
     __delay_cycles(0xffff);
     P4OUT &= ~BIT0;
     PJOUT &= ~BIT6;
-#e  ndif
+#endif
 
     /*
     SPI_initialize();
