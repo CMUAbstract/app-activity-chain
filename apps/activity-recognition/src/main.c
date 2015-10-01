@@ -22,11 +22,11 @@
 #define MODEL_SIZE 95
 
 // Number of samples to discard before recording training set
-#define NUM_WARMUP_SAMPLES 10
-#define TRANING_SET_SIZE MODEL_SIZE
+#define NUM_WARMUP_SAMPLES 5
+#define TRANING_SET_SIZE MODEL_COMPARISONS
 
 #define ACCEL_WINDOW_SIZE 4
-#define MODEL_COMPARISONS 10
+#define MODEL_COMPARISONS 5
 
 // number of samples until experiment is "idle", the computed
 // results (moving/stationary stats) are "output" to non-volatile
@@ -48,6 +48,10 @@
 #define FEATURIZE_BLINK_DURATION  (SEC_TO_CYCLES * 4)
 #define CLASSIFY_BLINKS 1
 #define CLASSIFY_BLINK_DURATION (SEC_TO_CYCLES * 8)
+#define WARMUP_BLINKS 2
+#define WARMUP_BLINK_DURATION (SEC_TO_CYCLES / 2)
+#define TRAIN_BLINKS 1
+#define TRAIN_BLINK_DURATION (SEC_TO_CYCLES * 8)
 
 typedef threeAxis_t_8 accelReading;
 typedef accelReading accelWindow[ACCEL_WINDOW_SIZE];
@@ -547,6 +551,8 @@ void task_warmup()
     unsigned discardedSamplesCount;
     threeAxis_t_8 sample;
 
+    blink(WARMUP_BLINKS, WARMUP_BLINK_DURATION, PIN_LED1, PIN_LED2);
+
     discardedSamplesCount = *CHAN_IN(discardedSamplesCount,
                                      CH(task_selectMode, task_warmup),
                                      SELF_IN_CH(task_warmup));
@@ -574,6 +580,8 @@ void task_train()
     features_t features;
     unsigned trainingSetSize;;
     unsigned class;
+
+    blink(TRAIN_BLINKS, TRAIN_BLINK_DURATION, PIN_LED1, PIN_LED2);
 
     features = *CHAN_IN1(features, CH(task_featurize, task_train));
     trainingSetSize = *CHAN_IN(trainingSetSize, CH(task_warmup, task_train),
