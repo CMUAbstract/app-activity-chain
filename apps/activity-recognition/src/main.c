@@ -10,6 +10,12 @@
 
 #include <libchain/chain.h>
 
+// Peripheral registers not defined by wisp-base (or defined inconveniently)
+#define PAUXIN      P3IN
+#define PAUXOUT     P3OUT
+#define PAUXDIR     P3DIR
+#define PAUXREN     P3REN
+
 #define USE_LEDS
 #define FLASH_ON_BOOT
 
@@ -22,7 +28,7 @@
 #define ACCEL_WINDOW_SIZE 4
 #define MODEL_COMPARISONS 10
 
-// number of samples until experiment is "done", the computed
+// number of samples until experiment is "idle", the computed
 // results (moving/stationary stats) are "output" to non-volatile
 // memory, and the LEDs go on
 #define SAMPLES_TO_COLLECT 10000
@@ -31,6 +37,8 @@
 #define NUM_FEATURES 2
 
 #define SEC_TO_CYCLES 4000000 /* 4 MHz */
+
+#define IDLE_BLINK_RATE SEC_TO_CYCLES
 
 typedef threeAxis_t_8 accelReading;
 typedef accelReading accelWindow[ACCEL_WINDOW_SIZE];
@@ -46,10 +54,10 @@ typedef enum {
 } class_t;
 
 typedef enum {
-    MODE_TRAIN = 0,
+    MODE_TRAIN = (PIN_AUX1 | PIN_AUX2),
     MODE_TRAIN_STATIONARY = PIN_AUX1,
     MODE_TRAIN_MOVING = PIN_AUX2,
-    MODE_ACQUIRE = (PIN_AUX1 | PIN_AUX2),
+    MODE_ACQUIRE = 0,
 } run_mode_t;
 
 // We support using a model that is either
@@ -58,10 +66,10 @@ typedef enum {
 //
 // This is the hardcoded model data.
 
-const unsigned hardcoded_model_data_stationary[] = {
+volatile __fram const unsigned hardcoded_model_data_stationary[] = {
 #include "int_wisp5_stationary.h"
 };
-const unsigned hardcoded_model_data_moving[] = {
+volatile __fram const unsigned hardcoded_model_data_moving[] = {
 #include "int_wisp5_flapping.h"
 };
 
@@ -123,7 +131,7 @@ TASK(5, task_classify)
 TASK(6, task_stats)
 TASK(7, task_warmup)
 TASK(8, task_train)
-TASK(9, task_done)
+TASK(9, task_idle)
 
 CHANNEL(task_init, task_classify, msg_model);
 
@@ -162,6 +170,9 @@ void initializeHardware()
 {
     threeAxis_t_8 accelID;
 
+    // Unlock I/O ports: required after boot up
+    PM5CTL0 &= ~LOCKLPM5;
+
     setupDflt_IO();
 
     // set clock speed to 4 MHz
@@ -181,6 +192,11 @@ void initializeHardware()
     P4OUT &= ~BIT0;
     PJOUT &= ~BIT6;
 #endif
+
+    // AUX pins select run mode: configure as inputs with pull-ups
+    PAUXDIR &= ~(PIN_AUX1 | PIN_AUX2);
+    PAUXREN |= PIN_AUX1 | PIN_AUX2;
+    PAUXOUT |= PIN_AUX1 | PIN_AUX2; // pull-up
 
     /*
     SPI_initialize();
@@ -233,10 +249,9 @@ void task_init()
 
     TRANSITION_TO(task_selectMode);
 }
-
 void task_selectMode()
 {
-    uint8_t pin_state = (PAUX1IN & (PIN_AUX1 | PIN_AUX2));
+    uint8_t pin_state = (PAUXIN & (PIN_AUX1 | PIN_AUX2));
     switch(pin_state) {
         case MODE_TRAIN_STATIONARY:
             CHAN_OUT(discardedSamplesCount, 0, CH(task_selectMode, task_warmup));
@@ -259,8 +274,9 @@ void task_selectMode()
 
             TRANSITION_TO(task_resetStats);
             break;
+
         default:
-            TRANSITION_TO(task_done);
+            TRANSITION_TO(task_idle);
     }
 }
 
@@ -481,7 +497,7 @@ void task_stats()
         PJOUT &= ~BIT6;
 #endif
 
-        TRANSITION_TO(task_done);
+        TRANSITION_TO(task_idle);
     } else {
         TRANSITION_TO(task_sample);
     }
@@ -539,17 +555,17 @@ void task_train()
         CHAN_OUT(trainingSetSize, trainingSetSize, SELF_IN_CH(task_train));
         TRANSITION_TO(task_sample);
     } else {
-        TRANSITION_TO(task_done);
+        TRANSITION_TO(task_idle);
     }
 }
 
-void task_done() {
+void task_idle() {
     unsigned i;
 
     P4OUT ^= BIT0;
     PJOUT ^= BIT6;
 
-    for (i = 0; i < SEC_TO_CYCLES / (1U << 15); ++i)
+    for (i = 0; i < IDLE_BLINK_RATE / 2 / (1U << 15); ++i)
         __delay_cycles(1U << 15);
 
     TRANSITION_TO(task_selectMode);
