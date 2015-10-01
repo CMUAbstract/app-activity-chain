@@ -38,7 +38,14 @@
 
 #define SEC_TO_CYCLES 4000000 /* 4 MHz */
 
-#define IDLE_BLINK_RATE SEC_TO_CYCLES
+#define IDLE_BLINKS 1
+#define IDLE_BLINK_DURATION SEC_TO_CYCLES
+#define SELECT_MODE_BLINKS  2
+#define SELECT_MODE_BLINK_DURATION  (SEC_TO_CYCLES / 5)
+#define CLASSIFY_BLINKS 1
+#define CLASSIFY_BLINK_DURATION (SEC_TO_CYCLES * 2)
+#define SAMPLE_BLINKS  4
+#define SAMPLE_BLINK_DURATION  (SEC_TO_CYCLES / 5)
 
 typedef threeAxis_t_8 accelReading;
 typedef accelReading accelWindow[ACCEL_WINDOW_SIZE];
@@ -166,6 +173,26 @@ void __delay_cycles(unsigned long cyc) {
 }
 #endif
 
+static void delay(uint32_t cycles)
+{
+    unsigned i;
+    for (i = 0; i < cycles / (1U << 15); ++i)
+        __delay_cycles(1U << 15);
+}
+
+static void blink(unsigned count, uint32_t duration, unsigned led1, unsigned led2)
+{
+    unsigned i;
+    for (i = 0; i < count; ++i) {
+        P4OUT |= led1;
+        PJOUT |= led2;
+        delay(duration / 2);
+        P4OUT &= ~led1;
+        PJOUT &= ~led2;
+        delay(duration / 2);
+    }
+}
+
 void initializeHardware()
 {
     threeAxis_t_8 accelID;
@@ -182,15 +209,15 @@ void initializeHardware()
     CSCTL3 = DIVA_0 | DIVS_0 | DIVM_0;
 
     /*Before anything else, do the device hardware configuration*/
-    P4DIR |= BIT0;
-    PJDIR |= BIT6;
+    P4DIR |= PIN_LED2;
+    PJDIR |= PIN_LED1;
 
 #if defined(USE_LEDS) && defined(FLASH_ON_BOOT)
-    P4OUT |= BIT0;
-    PJOUT |= BIT6;
+    P4OUT |= PIN_LED2;
+    PJOUT |= PIN_LED1;
     __delay_cycles(0xffff);
-    P4OUT &= ~BIT0;
-    PJOUT &= ~BIT6;
+    P4OUT &= ~PIN_LED2;
+    PJOUT &= ~PIN_LED1;
 #endif
 
     // AUX pins select run mode: configure as inputs with pull-ups
@@ -251,6 +278,8 @@ void task_init()
 }
 void task_selectMode()
 {
+    blink(SELECT_MODE_BLINKS, SELECT_MODE_BLINK_DURATION, PIN_LED1, PIN_LED2);
+
     uint8_t pin_state = (PAUXIN & (PIN_AUX1 | PIN_AUX2));
     switch(pin_state) {
         case MODE_TRAIN_STATIONARY:
@@ -297,6 +326,8 @@ void task_sample()
 {
     accelReading sample;
     unsigned samplesInWindow;
+
+    blink(SAMPLE_BLINKS, SAMPLE_BLINK_DURATION, PIN_LED1, PIN_LED2);
 
     ACCEL_singleSample(&sample);
 
@@ -465,8 +496,7 @@ void task_stats()
         case CLASS_MOVING:
 
 #if defined (USE_LEDS)
-      PJOUT &= ~BIT6;
-      P4OUT |= BIT0;
+            blink(CLASSIFY_BLINKS, CLASSIFY_BLINK_DURATION, PIN_LED1, 0);
 #endif //USE_LEDS
 
             movingCount = *CHAN_IN(movingCount, CH(task_resetStats, task_stats),
@@ -477,8 +507,7 @@ void task_stats()
         case CLASS_STATIONARY:
 
 #if defined (USE_LEDS)
-      P4OUT &= ~BIT0;  // Toggle P1.0 using exclusive-OR
-      PJOUT |= BIT6;
+            blink(CLASSIFY_BLINKS, CLASSIFY_BLINK_DURATION, 0, PIN_LED2);
 #endif //USE_LEDS
 
             stationaryCount = *CHAN_IN(stationaryCount, CH(task_resetStats, task_stats),
@@ -499,8 +528,8 @@ void task_stats()
         resultMovingPct = ((float)movingCount / (float)totalCount) * 100.0f;
 
 #if defined (USE_LEDS)
-        P4OUT &= ~BIT0;
-        PJOUT &= ~BIT6;
+        P4OUT &= ~PIN_LED2;
+        PJOUT &= ~PIN_LED1;
 #endif
 
         TRANSITION_TO(task_idle);
@@ -566,13 +595,7 @@ void task_train()
 }
 
 void task_idle() {
-    unsigned i;
-
-    P4OUT ^= BIT0;
-    PJOUT ^= BIT6;
-
-    for (i = 0; i < IDLE_BLINK_RATE / 2 / (1U << 15); ++i)
-        __delay_cycles(1U << 15);
+    blink(IDLE_BLINKS, IDLE_BLINK_DURATION, PIN_LED1, PIN_LED2);
 
     TRANSITION_TO(task_selectMode);
 }
