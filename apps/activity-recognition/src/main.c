@@ -222,8 +222,8 @@ void initializeHardware()
 
     // AUX pins select run mode: configure as inputs with pull-ups
     PAUXDIR &= ~(PIN_AUX1 | PIN_AUX2);
-    PAUXREN |= PIN_AUX1 | PIN_AUX2;
     PAUXOUT &= ~(PIN_AUX1 | PIN_AUX2); // pull-down
+    PAUXREN |= PIN_AUX1 | PIN_AUX2;
 
     /*
     SPI_initialize();
