@@ -255,7 +255,7 @@ void task_selectMode()
     switch(pin_state) {
         case MODE_TRAIN_STATIONARY:
             CHAN_OUT(discardedSamplesCount, 0, CH(task_selectMode, task_warmup));
-            CHAN_OUT(mode, MODE_TRAIN, CH(task_selectMode, task_featurize));
+            CHAN_OUT(mode, MODE_TRAIN_STATIONARY, CH(task_selectMode, task_featurize));
             CHAN_OUT(class, CLASS_STATIONARY, CH(task_selectMode, task_train));
 
             TRANSITION_TO(task_warmup);
@@ -263,7 +263,7 @@ void task_selectMode()
 
         case MODE_TRAIN_MOVING:
             CHAN_OUT(discardedSamplesCount, 0, CH(task_selectMode, task_warmup));
-            CHAN_OUT(mode, MODE_TRAIN, CH(task_selectMode, task_featurize));
+            CHAN_OUT(mode, MODE_TRAIN_MOVING, CH(task_selectMode, task_featurize));
             CHAN_OUT(class, CLASS_MOVING, CH(task_selectMode, task_train));
 
             TRANSITION_TO(task_warmup);
@@ -372,7 +372,8 @@ void task_featurize()
    mode = *CHAN_IN1(mode, CH(task_selectMode, task_featurize));
 
    switch (mode) {
-       case MODE_TRAIN:
+       case MODE_TRAIN_STATIONARY:
+       case MODE_TRAIN_MOVING:
            CHAN_OUT(features, features, CH(task_featurize, task_train));
            TRANSITION_TO(task_train);
            break;
