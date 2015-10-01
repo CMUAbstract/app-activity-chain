@@ -459,28 +459,31 @@ void task_stats()
 
     class = *CHAN_IN1(class, CH(task_classify, task_stats));
 
-    if (class) {
+    switch (class) {
+        case CLASS_MOVING:
 
 #if defined (USE_LEDS)
       PJOUT &= ~BIT6;
       P4OUT |= BIT0;
 #endif //USE_LEDS
 
-      movingCount = *CHAN_IN(movingCount, CH(task_resetStats, task_stats),
-                                          SELF_IN_CH(task_stats));
-      movingCount++;
-      CHAN_OUT(movingCount, movingCount, SELF_OUT_CH(task_stats));
-    } else {
+            movingCount = *CHAN_IN(movingCount, CH(task_resetStats, task_stats),
+                                                SELF_IN_CH(task_stats));
+            movingCount++;
+            CHAN_OUT(movingCount, movingCount, SELF_OUT_CH(task_stats));
+            break;
+        case CLASS_STATIONARY:
 
 #if defined (USE_LEDS)
       P4OUT &= ~BIT0;  // Toggle P1.0 using exclusive-OR
       PJOUT |= BIT6;
 #endif //USE_LEDS
 
-      stationaryCount = *CHAN_IN(stationaryCount, CH(task_resetStats, task_stats),
-                                                  SELF_IN_CH(task_stats));
-      stationaryCount++;
-      CHAN_OUT(stationaryCount, stationaryCount, SELF_OUT_CH(task_stats));
+            stationaryCount = *CHAN_IN(stationaryCount, CH(task_resetStats, task_stats),
+                                                      SELF_IN_CH(task_stats));
+            stationaryCount++;
+            CHAN_OUT(stationaryCount, stationaryCount, SELF_OUT_CH(task_stats));
+            break;
     }
 
     if (totalCount > SAMPLES_TO_COLLECT) {
