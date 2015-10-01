@@ -31,7 +31,7 @@
 // number of samples until experiment is "idle", the computed
 // results (moving/stationary stats) are "output" to non-volatile
 // memory, and the LEDs go on
-#define SAMPLES_TO_COLLECT 10000
+#define SAMPLES_TO_COLLECT 4
 
 // two features: mean & stdev
 #define NUM_FEATURES 2
