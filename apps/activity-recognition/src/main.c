@@ -54,10 +54,10 @@ typedef enum {
 } class_t;
 
 typedef enum {
-    MODE_TRAIN = (PIN_AUX1 | PIN_AUX2),
+    MODE_IDLE = 0,
     MODE_TRAIN_STATIONARY = PIN_AUX1,
     MODE_TRAIN_MOVING = PIN_AUX2,
-    MODE_ACQUIRE = 0,
+    MODE_ACQUIRE = (PIN_AUX1 | PIN_AUX2),
 } run_mode_t;
 
 // We support using a model that is either
@@ -196,7 +196,7 @@ void initializeHardware()
     // AUX pins select run mode: configure as inputs with pull-ups
     PAUXDIR &= ~(PIN_AUX1 | PIN_AUX2);
     PAUXREN |= PIN_AUX1 | PIN_AUX2;
-    PAUXOUT |= PIN_AUX1 | PIN_AUX2; // pull-up
+    PAUXOUT &= ~(PIN_AUX1 | PIN_AUX2); // pull-down
 
     /*
     SPI_initialize();
