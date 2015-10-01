@@ -40,12 +40,14 @@
 
 #define IDLE_BLINKS 1
 #define IDLE_BLINK_DURATION SEC_TO_CYCLES
-#define SELECT_MODE_BLINKS  2
+#define SELECT_MODE_BLINKS  4
 #define SELECT_MODE_BLINK_DURATION  (SEC_TO_CYCLES / 5)
+#define SAMPLE_BLINKS  1
+#define SAMPLE_BLINK_DURATION  (SEC_TO_CYCLES * 2)
+#define FEATURIZE_BLINKS  2
+#define FEATURIZE_BLINK_DURATION  (SEC_TO_CYCLES * 4)
 #define CLASSIFY_BLINKS 1
-#define CLASSIFY_BLINK_DURATION (SEC_TO_CYCLES * 2)
-#define SAMPLE_BLINKS  4
-#define SAMPLE_BLINK_DURATION  (SEC_TO_CYCLES / 5)
+#define CLASSIFY_BLINK_DURATION (SEC_TO_CYCLES * 8)
 
 typedef threeAxis_t_8 accelReading;
 typedef accelReading accelWindow[ACCEL_WINDOW_SIZE];
@@ -353,6 +355,8 @@ void task_featurize()
    accelReading mean, stddev;
    features_t features;
    run_mode_t mode;
+
+   blink(FEATURIZE_BLINKS, FEATURIZE_BLINK_DURATION, PIN_LED1, PIN_LED2);
  
    mean.x = mean.y = mean.z = 0;
    stddev.x = stddev.y = stddev.z = 0;
