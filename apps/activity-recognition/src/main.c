@@ -288,6 +288,8 @@ void task_resetStats()
     CHAN_OUT(movingCount, 0, CH(task_resetStats, task_stats));
     CHAN_OUT(stationaryCount, 0, CH(task_resetStats, task_stats));
 
+    CHAN_OUT(samplesInWindow, 0, CH(task_resetStats, task_sample));
+
     TRANSITION_TO(task_sample);
 }
 
