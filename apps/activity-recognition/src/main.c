@@ -27,6 +27,7 @@
 
 #define ACCEL_WINDOW_SIZE 4
 #define MODEL_COMPARISONS 5
+#define SAMPLE_NOISE_FLOOR 10 // TODO: made up value
 
 // number of samples until experiment is "idle", the computed
 // results (moving/stationary stats) are "output" to non-volatile
@@ -139,12 +140,13 @@ TASK(0, task_init)
 TASK(1, task_selectMode)
 TASK(2, task_resetStats)
 TASK(3, task_sample)
-TASK(4, task_featurize)
-TASK(5, task_classify)
-TASK(6, task_stats)
-TASK(7, task_warmup)
-TASK(8, task_train)
-TASK(9, task_idle)
+TASK(4, task_transform)
+TASK(5, task_featurize)
+TASK(6, task_classify)
+TASK(7, task_stats)
+TASK(8, task_warmup)
+TASK(9, task_train)
+TASK(10, task_idle)
 
 CHANNEL(task_init, task_classify, msg_model);
 
@@ -155,8 +157,10 @@ CHANNEL(task_selectMode, task_train, msg_class);
 CHANNEL(task_resetStats, task_stats, msg_stats);
 CHANNEL(task_resetStats, task_sample, msg_windowSize);
 
-CHANNEL(task_sample, task_featurize, msg_window);
+MULTICAST_CHANNEL(msg_window, ch_sample_window,
+                 task_sample, task_transform, task_featurize);
 SELF_CHANNEL(task_sample, msg_windowSize);
+CHANNEL(task_transform, task_featurize, msg_window);
 
 CHANNEL(task_featurize, task_train, msg_features);
 CHANNEL(task_featurize, task_classify, msg_features);
@@ -342,15 +346,35 @@ void task_sample()
                                SELF_IN_CH(task_sample));
 
     samplesInWindow++;
-    CHAN_OUT(window[samplesInWindow], sample, CH(task_sample, task_featurize));
+    CHAN_OUT(window[samplesInWindow], sample,
+             MC_OUT_CH(ch_sample_window, task_sample, task_transform, task_featurize));
 
     if (samplesInWindow < ACCEL_WINDOW_SIZE) {
         CHAN_OUT(samplesInWindow, samplesInWindow, SELF_OUT_CH(task_sample));
         TRANSITION_TO(task_sample);
     } else {
         CHAN_OUT(samplesInWindow, 0, SELF_OUT_CH(task_sample));
-        TRANSITION_TO(task_featurize);
+        TRANSITION_TO(task_transform);
     }
+}
+
+void task_transform()
+{
+    unsigned i;
+
+    accelReading *sample;
+    for (i = 0; i < ACCEL_WINDOW_SIZE; i++) {
+        sample = CHAN_IN1(window[i], MC_IN_CH(ch_sample_window, task_sample, task_transform));
+        if (sample->x < SAMPLE_NOISE_FLOOR)
+            sample->x = 0;
+        if (sample->y < SAMPLE_NOISE_FLOOR)
+            sample->y = 0;
+        if (sample->z < SAMPLE_NOISE_FLOOR)
+            sample->z = 0;
+
+        CHAN_OUT(window[i], *sample, CH(task_transform, task_featurize));
+    }
+    TRANSITION_TO(task_featurize);
 }
 
 void task_featurize()
@@ -366,7 +390,8 @@ void task_featurize()
    stddev.x = stddev.y = stddev.z = 0;
    int i;
    for (i = 0; i < ACCEL_WINDOW_SIZE; i++) {
-       reading = CHAN_IN1(window[i], CH(task_sample, task_featurize));
+       reading = CHAN_IN(window[i], MC_IN_CH(ch_sample_window, task_sample, task_featurize),
+                                    CH(task_transform, task_featurize));
        mean.x += reading->x;
        mean.y += reading->y;
        mean.z += reading->z;
@@ -382,7 +407,8 @@ void task_featurize()
  
    for (i = 0; i < ACCEL_WINDOW_SIZE; i++) {
        // TODO: room for optimization: promotion to volatile (since same vals read above)
-       reading = CHAN_IN1(window[i], CH(task_sample, task_featurize));
+       reading = CHAN_IN(window[i], MC_IN_CH(ch_sample_window, task_sample, task_featurize),
+                                    CH(task_transform, task_featurize));
        stddev.x += reading->x > mean.x ? reading->x - mean.x
                                       : mean.x - reading->x;
        stddev.y += reading->y > mean.y ? reading->y - mean.y
