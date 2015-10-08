@@ -3,7 +3,7 @@ EXEC = ar.out
 OBJECTS = \
 	main.o \
 
-include ../../../Makefile.common.gcc
+include $(MAKER_ROOT)/Makefile.gcc
 
 CFLAGS += \
 	-I $(LIBCHAIN_ROOT)/src/include \
@@ -11,8 +11,8 @@ CFLAGS += \
 	-I $(WISP_BASE_ROOT)/Sensors \
 	-I $(WISP_BASE_ROOT)/wired \
 
-LFLAGS = \
-	-L $(LIBCHAIN_ROOT)/gcc \
+LFLAGS += \
+	-L $(LIBCHAIN_ROOT)/bld/gcc \
 	-L $(WISP_BASE_ROOT)/gcc \
 
 LIBS = \
@@ -20,4 +20,4 @@ LIBS = \
 	-lwisp-base \
 	-lm \
 
-VPATH = $(SRC_DIR)
+VPATH = ../../src
