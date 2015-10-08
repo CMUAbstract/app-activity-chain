@@ -10,14 +10,11 @@
 
 #include <libchain/chain.h>
 
-// Peripheral registers not defined by wisp-base (or defined inconveniently)
-#define PAUXIN      P3IN
-#define PAUXOUT     P3OUT
-#define PAUXDIR     P3DIR
-#define PAUXREN     P3REN
+#include "pins.h"
 
 #define USE_LEDS
 #define FLASH_ON_BOOT
+#define ENABLE_PRINTF
 
 #define MODEL_SIZE 95
 
@@ -54,6 +51,16 @@
 #define TRAIN_BLINKS 1
 #define TRAIN_BLINK_DURATION (SEC_TO_CYCLES * 8)
 
+#define LED1 (1 << 0)
+#define LED2 (1 << 1)
+
+#ifndef ENABLE_PRINTF
+#define printf(...)
+#endif
+
+// If you link-in wisp-base, then you have to define some symbols.
+uint8_t usrBank[USRBANK_SIZE];
+
 typedef threeAxis_t_8 accelReading;
 typedef accelReading accelWindow[ACCEL_WINDOW_SIZE];
 
@@ -69,9 +76,9 @@ typedef enum {
 
 typedef enum {
     MODE_IDLE = 0,
-    MODE_TRAIN_STATIONARY = PIN_AUX1,
-    MODE_TRAIN_MOVING = PIN_AUX2,
-    MODE_ACQUIRE = (PIN_AUX1 | PIN_AUX2),
+    MODE_TRAIN_STATIONARY = BIT(PIN_AUX_1),
+    MODE_TRAIN_MOVING = BIT(PIN_AUX_2),
+    MODE_ACQUIRE = (BIT(PIN_AUX_1) | BIT(PIN_AUX_2)),
 } run_mode_t;
 
 // We support using a model that is either
@@ -190,15 +197,15 @@ static void delay(uint32_t cycles)
         __delay_cycles(1U << 15);
 }
 
-static void blink(unsigned count, uint32_t duration, unsigned led1, unsigned led2)
+static void blink(unsigned count, uint32_t duration, unsigned leds)
 {
     unsigned i;
     for (i = 0; i < count; ++i) {
-        P4OUT |= led1;
-        PJOUT |= led2;
+        GPIO(PORT_LED_1, DIR) |= (leds & LED1) ? BIT(PIN_LED_1) : 0x0;
+        GPIO(PORT_LED_2, DIR) |= (leds & LED2) ? BIT(PIN_LED_2) : 0x0;
         delay(duration / 2);
-        P4OUT &= ~led1;
-        PJOUT &= ~led2;
+        GPIO(PORT_LED_1, DIR) &= (leds & LED1) ? ~BIT(PIN_LED_1) : ~0x0;
+        GPIO(PORT_LED_2, DIR) &= (leds & LED2) ? ~BIT(PIN_LED_2) : ~0x0;
         delay(duration / 2);
     }
 }
@@ -207,33 +214,32 @@ void initializeHardware()
 {
     threeAxis_t_8 accelID;
 
-    // Unlock I/O ports: required after boot up
-    PM5CTL0 &= ~LOCKLPM5;
+    WISP_init();
 
-    setupDflt_IO();
-
-    // set clock speed to 4 MHz
-    CSCTL0_H = 0xA5;
-    CSCTL1 = DCOFSEL0 | DCOFSEL1;
-    CSCTL2 = SELA_0 | SELS_3 | SELM_3;
-    CSCTL3 = DIVA_0 | DIVS_0 | DIVM_0;
-
-    /*Before anything else, do the device hardware configuration*/
-    P4DIR |= PIN_LED2;
-    PJDIR |= PIN_LED1;
-
-#if defined(USE_LEDS) && defined(FLASH_ON_BOOT)
-    P4OUT |= PIN_LED2;
-    PJOUT |= PIN_LED1;
-    __delay_cycles(0xffff);
-    P4OUT &= ~PIN_LED2;
-    PJOUT &= ~PIN_LED1;
+    GPIO(PORT_LED_1, DIR) |= BIT(PIN_LED_1);
+    GPIO(PORT_LED_2, DIR) |= BIT(PIN_LED_2);
+#if defined(PORT_LED_3) // inidicates power-on when available
+    GPIO(PORT_LED_3, DIR) |= BIT(PIN_LED_3);
+    GPIO(PORT_LED_3, OUT) |= BIT(PIN_LED_3);
 #endif
 
+
+    UART_init();
+
+#if defined(USE_LEDS) && defined(FLASH_ON_BOOT)
+    GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
+    GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
+    delay(0xfffff);
+    GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
+    GPIO(PORT_LED_2, OUT) &= ~BIT(PIN_LED_2);
+#endif
+
+    __enable_interrupt();
+
     // AUX pins select run mode: configure as inputs with pull-ups
-    PAUXDIR &= ~(PIN_AUX1 | PIN_AUX2);
-    PAUXOUT &= ~(PIN_AUX1 | PIN_AUX2); // pull-down
-    PAUXREN |= PIN_AUX1 | PIN_AUX2;
+    GPIO(PORT_AUX, DIR) &= ~(BIT(PIN_AUX_1) | BIT(PIN_AUX_2));
+    GPIO(PORT_AUX, OUT) &= ~(BIT(PIN_AUX_1) | BIT(PIN_AUX_2)); // pull-down
+    GPIO(PORT_AUX, REN) |= BIT(PIN_AUX_1) | BIT(PIN_AUX_2);
 
     /*
     SPI_initialize();
@@ -242,13 +248,6 @@ void initializeHardware()
     // ACCEL_SetReg(0x2D,0x02);
 
     /* TODO: move the below stuff to accel.c */
-    BITSET(PDIR_AUX3, PIN_AUX3);
-    __delay_cycles(50);
-    BITCLR(P1OUT, PIN_AUX3);
-    __delay_cycles(50);
-    BITSET(P1OUT, PIN_AUX3);
-    __delay_cycles(50);
-
     BITSET(P4SEL1, PIN_ACCEL_EN);
     BITSET(P4SEL0, PIN_ACCEL_EN);
 
@@ -262,6 +261,8 @@ void initializeHardware()
     ACCEL_initialize();
     __delay_cycles(5);
     ACCEL_readID(&accelID);
+
+    printf("init: booted\r\n");
 }
 
 void task_init()
@@ -288,9 +289,9 @@ void task_init()
 }
 void task_selectMode()
 {
-    blink(SELECT_MODE_BLINKS, SELECT_MODE_BLINK_DURATION, PIN_LED1, PIN_LED2);
+    blink(SELECT_MODE_BLINKS, SELECT_MODE_BLINK_DURATION, LED1 | LED2);
 
-    uint8_t pin_state = (PAUXIN & (PIN_AUX1 | PIN_AUX2));
+    uint8_t pin_state = GPIO(PORT_AUX, IN) & (BIT(PIN_AUX_1) | BIT(PIN_AUX_2));
     switch(pin_state) {
         case MODE_TRAIN_STATIONARY:
             CHAN_OUT(discardedSamplesCount, 0, CH(task_selectMode, task_warmup));
@@ -337,7 +338,7 @@ void task_sample()
     accelReading sample;
     unsigned samplesInWindow;
 
-    blink(SAMPLE_BLINKS, SAMPLE_BLINK_DURATION, PIN_LED1, PIN_LED2);
+    blink(SAMPLE_BLINKS, SAMPLE_BLINK_DURATION, LED1 | LED2);
 
     ACCEL_singleSample(&sample);
 
@@ -384,7 +385,7 @@ void task_featurize()
    features_t features;
    run_mode_t mode;
 
-   blink(FEATURIZE_BLINKS, FEATURIZE_BLINK_DURATION, PIN_LED1, PIN_LED2);
+   blink(FEATURIZE_BLINKS, FEATURIZE_BLINK_DURATION, LED1 | LED2);
  
    mean.x = mean.y = mean.z = 0;
    stddev.x = stddev.y = stddev.z = 0;
@@ -530,7 +531,7 @@ void task_stats()
         case CLASS_MOVING:
 
 #if defined (USE_LEDS)
-            blink(CLASSIFY_BLINKS, CLASSIFY_BLINK_DURATION, PIN_LED1, 0);
+            blink(CLASSIFY_BLINKS, CLASSIFY_BLINK_DURATION, LED1);
 #endif //USE_LEDS
 
             movingCount = *CHAN_IN(movingCount, CH(task_resetStats, task_stats),
@@ -541,7 +542,7 @@ void task_stats()
         case CLASS_STATIONARY:
 
 #if defined (USE_LEDS)
-            blink(CLASSIFY_BLINKS, CLASSIFY_BLINK_DURATION, 0, PIN_LED2);
+            blink(CLASSIFY_BLINKS, CLASSIFY_BLINK_DURATION, LED2);
 #endif //USE_LEDS
 
             stationaryCount = *CHAN_IN(stationaryCount, CH(task_resetStats, task_stats),
@@ -577,7 +578,7 @@ void task_warmup()
     unsigned discardedSamplesCount;
     threeAxis_t_8 sample;
 
-    blink(WARMUP_BLINKS, WARMUP_BLINK_DURATION, PIN_LED1, PIN_LED2);
+    blink(WARMUP_BLINKS, WARMUP_BLINK_DURATION, LED1 | LED2);
 
     discardedSamplesCount = *CHAN_IN(discardedSamplesCount,
                                      CH(task_selectMode, task_warmup),
@@ -607,7 +608,7 @@ void task_train()
     unsigned trainingSetSize;;
     unsigned class;
 
-    blink(TRAIN_BLINKS, TRAIN_BLINK_DURATION, PIN_LED1, PIN_LED2);
+    blink(TRAIN_BLINKS, TRAIN_BLINK_DURATION, LED1 | LED2);
 
     features = *CHAN_IN1(features, CH(task_featurize, task_train));
     trainingSetSize = *CHAN_IN(trainingSetSize, CH(task_warmup, task_train),
@@ -633,7 +634,7 @@ void task_train()
 }
 
 void task_idle() {
-    blink(IDLE_BLINKS, IDLE_BLINK_DURATION, PIN_LED1, PIN_LED2);
+    blink(IDLE_BLINKS, IDLE_BLINK_DURATION, LED1 | LED2);
 
     TRANSITION_TO(task_selectMode);
 }

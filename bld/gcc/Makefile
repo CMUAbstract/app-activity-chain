@@ -13,10 +13,12 @@ CFLAGS += \
 
 LFLAGS += \
 	-L $(LIBCHAIN_ROOT)/bld/gcc \
+	-L $(LIBMSPCONSOLE_ROOT)/bld/gcc \
 	-L $(WISP_BASE_ROOT)/gcc \
 
 LIBS = \
     -lchain \
+	-lmspconsole \
 	-lwisp-base \
 	-lm \
 
