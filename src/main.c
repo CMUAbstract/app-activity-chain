@@ -271,6 +271,8 @@ void task_init()
 {
     unsigned i;
 
+    printf("init\r\n");
+
     // Until training happens, we use the hardcoded model. To keep
     // the classify task unaware of where the model came from, we
     // we channel the respective model to it. To be able to channel
@@ -294,6 +296,9 @@ void task_selectMode()
     blink(SELECT_MODE_BLINKS, SELECT_MODE_BLINK_DURATION, LED1 | LED2);
 
     uint8_t pin_state = GPIO(PORT_AUX, IN) & (BIT(PIN_AUX_1) | BIT(PIN_AUX_2));
+
+    printf("selectMode: 0x%02x\r\n", pin_state);
+
     switch(pin_state) {
         case MODE_TRAIN_STATIONARY:
             CHAN_OUT(discardedSamplesCount, 0, CH(task_selectMode, task_warmup));
@@ -326,6 +331,8 @@ void task_resetStats()
 {
     // NOTE: could roll this into selectMode task, but no compelling reason
 
+    printf("resetStats\r\n");
+
     // NOTE: not combined into one struct because not all code paths use both
     CHAN_OUT(movingCount, 0, CH(task_resetStats, task_stats));
     CHAN_OUT(stationaryCount, 0, CH(task_resetStats, task_stats));
@@ -339,6 +346,8 @@ void task_sample()
 {
     accelReading sample;
     unsigned samplesInWindow;
+
+    printf("sample\r\n");
 
     blink(SAMPLE_BLINKS, SAMPLE_BLINK_DURATION, LED1 | LED2);
 
@@ -365,6 +374,8 @@ void task_transform()
 {
     unsigned i;
 
+    printf("transform\r\n");
+
     accelReading *sample;
     for (i = 0; i < ACCEL_WINDOW_SIZE; i++) {
         sample = CHAN_IN1(window[i], MC_IN_CH(ch_sample_window, task_sample, task_transform));
@@ -386,6 +397,8 @@ void task_featurize()
    accelReading mean, stddev;
    features_t features;
    run_mode_t mode;
+
+   printf("featurize\r\n");
 
    blink(FEATURIZE_BLINKS, FEATURIZE_BLINK_DURATION, LED1 | LED2);
  
@@ -466,6 +479,8 @@ void task_classify() {
     long int meanmag;
     long int stddevmag;
     features_t model_features;
+
+   printf("classify\r\n");
   
     features = *CHAN_IN1(features, CH(task_featurize, task_classify));
 
@@ -511,6 +526,8 @@ void task_classify() {
   
     class = (move_less_error > stat_less_error) ? CLASS_MOVING : CLASS_STATIONARY;
     CHAN_OUT(class, class, CH(task_classify, task_stats));
+
+    printf("classify: class 0x%02x\r\n", class);
   
     TRANSITION_TO(task_stats);
 }
@@ -520,10 +537,13 @@ void task_stats()
     unsigned totalCount = 0, movingCount = 0, stationaryCount = 0;
     class_t class;
 
+    printf("stats\r\n");
+
     totalCount = *CHAN_IN(totalCount, CH(task_resetStats, task_stats),
                                       SELF_IN_CH(task_stats));
     
     totalCount++;
+    printf("stats: total %d\r\n", totalCount);
 
     CHAN_OUT(totalCount, totalCount, SELF_OUT_CH(task_stats));
 
@@ -539,6 +559,7 @@ void task_stats()
             movingCount = *CHAN_IN(movingCount, CH(task_resetStats, task_stats),
                                                 SELF_IN_CH(task_stats));
             movingCount++;
+            printf("stats: moving %d\r\n", movingCount);
             CHAN_OUT(movingCount, movingCount, SELF_OUT_CH(task_stats));
             break;
         case CLASS_STATIONARY:
@@ -550,6 +571,7 @@ void task_stats()
             stationaryCount = *CHAN_IN(stationaryCount, CH(task_resetStats, task_stats),
                                                       SELF_IN_CH(task_stats));
             stationaryCount++;
+            printf("stats: stationary %d\r\n", stationaryCount);
             CHAN_OUT(stationaryCount, stationaryCount, SELF_OUT_CH(task_stats));
             break;
     }
@@ -563,6 +585,9 @@ void task_stats()
         // where the results happen to be output.
         resultStationaryPct = ((float)stationaryCount / (float)totalCount) * 100.0f;
         resultMovingPct = ((float)movingCount / (float)totalCount) * 100.0f;
+
+        printf("stats: total %d stat %d%% moving %d%%\r\n",
+               totalCount, (unsigned)resultStationaryPct, (unsigned)resultMovingPct);
 
 #if defined (USE_LEDS)
         P4OUT &= ~PIN_LED2;
@@ -580,6 +605,8 @@ void task_warmup()
     unsigned discardedSamplesCount;
     threeAxis_t_8 sample;
 
+    printf("warmup\r\n");
+
     blink(WARMUP_BLINKS, WARMUP_BLINK_DURATION, LED1 | LED2);
 
     discardedSamplesCount = *CHAN_IN(discardedSamplesCount,
@@ -596,6 +623,7 @@ void task_warmup()
         ACCEL_singleSample(&sample);
     
         discardedSamplesCount++;
+        printf("warmup: discarded %d\r\n", discardedSamplesCount);
         CHAN_OUT(discardedSamplesCount, discardedSamplesCount, SELF_OUT_CH(task_warmup));
         TRANSITION_TO(task_warmup);
     } else {
@@ -609,6 +637,8 @@ void task_train()
     features_t features;
     unsigned trainingSetSize;;
     unsigned class;
+
+    printf("train\r\n");
 
     blink(TRAIN_BLINKS, TRAIN_BLINK_DURATION, LED1 | LED2);
 
@@ -628,6 +658,7 @@ void task_train()
         }
 
         trainingSetSize++;
+        printf("train: %d\r\n", trainingSetSize);
         CHAN_OUT(trainingSetSize, trainingSetSize, SELF_IN_CH(task_train));
         TRANSITION_TO(task_sample);
     } else {
@@ -637,6 +668,8 @@ void task_train()
 
 void task_idle() {
     blink(IDLE_BLINKS, IDLE_BLINK_DURATION, LED1 | LED2);
+
+    printf("idle\r\n");
 
     TRANSITION_TO(task_selectMode);
 }
