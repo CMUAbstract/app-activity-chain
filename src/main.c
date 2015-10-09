@@ -212,7 +212,7 @@ static void blink(unsigned count, uint32_t duration, unsigned leds)
 
 void initializeHardware()
 {
-    threeAxis_t_8 accelID;
+    threeAxis_t_8 accelID = {0};
 
     WISP_init();
 
