@@ -236,6 +236,8 @@ void initializeHardware()
 
     __enable_interrupt();
 
+    printf("init: initializing accel\r\n");
+
     // AUX pins select run mode: configure as inputs with pull-ups
     GPIO(PORT_AUX, DIR) &= ~(BIT(PIN_AUX_1) | BIT(PIN_AUX_2));
     GPIO(PORT_AUX, OUT) &= ~(BIT(PIN_AUX_1) | BIT(PIN_AUX_2)); // pull-down
@@ -262,7 +264,7 @@ void initializeHardware()
     __delay_cycles(5);
     ACCEL_readID(&accelID);
 
-    printf("init: booted\r\n");
+    printf("init: accel hw id: 0x%x\r\n", accelID.x);
 }
 
 void task_init()
