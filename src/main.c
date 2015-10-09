@@ -201,11 +201,11 @@ static void blink(unsigned count, uint32_t duration, unsigned leds)
 {
     unsigned i;
     for (i = 0; i < count; ++i) {
-        GPIO(PORT_LED_1, DIR) |= (leds & LED1) ? BIT(PIN_LED_1) : 0x0;
-        GPIO(PORT_LED_2, DIR) |= (leds & LED2) ? BIT(PIN_LED_2) : 0x0;
+        GPIO(PORT_LED_1, OUT) |= (leds & LED1) ? BIT(PIN_LED_1) : 0x0;
+        GPIO(PORT_LED_2, OUT) |= (leds & LED2) ? BIT(PIN_LED_2) : 0x0;
         delay(duration / 2);
-        GPIO(PORT_LED_1, DIR) &= (leds & LED1) ? ~BIT(PIN_LED_1) : ~0x0;
-        GPIO(PORT_LED_2, DIR) &= (leds & LED2) ? ~BIT(PIN_LED_2) : ~0x0;
+        GPIO(PORT_LED_1, OUT) &= (leds & LED1) ? ~BIT(PIN_LED_1) : ~0x0;
+        GPIO(PORT_LED_2, OUT) &= (leds & LED2) ? ~BIT(PIN_LED_2) : ~0x0;
         delay(duration / 2);
     }
 }
