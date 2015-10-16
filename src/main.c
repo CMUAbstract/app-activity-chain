@@ -232,7 +232,7 @@ void initializeHardware()
 #ifdef SHOW_BOOT_ON_LEDS
     GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
-    delay(0xfffff);
+    delay(SEC_TO_CYCLES * 5);
     GPIO(PORT_LED_1, OUT) &= ~BIT(PIN_LED_1);
     GPIO(PORT_LED_2, OUT) &= ~BIT(PIN_LED_2);
 #endif
