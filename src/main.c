@@ -392,16 +392,27 @@ void task_transform()
     printf("transform\r\n");
 
     accelReading *sample;
-    for (i = 0; i < ACCEL_WINDOW_SIZE; i++) {
-        sample = CHAN_IN1(window[i], MC_IN_CH(ch_sample_window, task_sample, task_transform));
-        if (sample->x < SAMPLE_NOISE_FLOOR)
-            sample->x = 0;
-        if (sample->y < SAMPLE_NOISE_FLOOR)
-            sample->y = 0;
-        if (sample->z < SAMPLE_NOISE_FLOOR)
-            sample->z = 0;
+    accelReading transformedSample;
 
-        CHAN_OUT(window[i], *sample, CH(task_transform, task_featurize));
+    for (i = 0; i < ACCEL_WINDOW_SIZE; i++) {
+        sample = CHAN_IN1(window[i],
+                          MC_IN_CH(ch_sample_window,
+                                   task_sample, task_transform));
+
+        if (sample->x < SAMPLE_NOISE_FLOOR ||
+            sample->y < SAMPLE_NOISE_FLOOR ||
+            sample->z < SAMPLE_NOISE_FLOOR) {
+
+            transformedSample.x = (sample->x > SAMPLE_NOISE_FLOOR)
+                                  ? sample->x : 0;
+            transformedSample.y = (sample->y > SAMPLE_NOISE_FLOOR)
+                                  ? sample->y : 0;
+            transformedSample.z = (sample->z > SAMPLE_NOISE_FLOOR)
+                                   ? sample->z : 0;
+
+            CHAN_OUT(window[i], transformedSample,
+                     CH(task_transform, task_featurize));
+        }
     }
     TRANSITION_TO(task_featurize);
 }
