@@ -24,14 +24,14 @@
 #define NUM_WARMUP_SAMPLES 5
 #define TRAINING_SET_SIZE MODEL_COMPARISONS
 
-#define ACCEL_WINDOW_SIZE 4
+#define ACCEL_WINDOW_SIZE 3
 #define MODEL_COMPARISONS 5
 #define SAMPLE_NOISE_FLOOR 10 // TODO: made up value
 
 // number of samples until experiment is "idle", the computed
 // results (moving/stationary stats) are "output" to non-volatile
 // memory, and the LEDs go on
-#define SAMPLES_TO_COLLECT 4
+#define SAMPLES_TO_COLLECT 2
 
 // two features: mean & stdev
 #define NUM_FEATURES 2
