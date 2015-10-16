@@ -689,24 +689,24 @@ void task_train()
                                                 SELF_IN_CH(task_train));
     class = *CHAN_IN1(class, CH(task_selectMode, task_train));
 
-    if (trainingSetSize < TRANING_SET_SIZE) {
-                printf("train: %u\r\n", trainingSetSize);
-        switch (class) {
-            case CLASS_STATIONARY: 
-                CHAN_OUT(model_stationary[trainingSetSize], features, CH(task_train, task_classify));
-                break;
-            case CLASS_MOVING: 
-                CHAN_OUT(model_moving[trainingSetSize], features, CH(task_train, task_classify));
-                break;
-        }
-
-        trainingSetSize++;
-        printf("train: class %u count %u\r\n", class, trainingSetSize);
-        CHAN_OUT(trainingSetSize, trainingSetSize, SELF_IN_CH(task_train));
-        TRANSITION_TO(task_sample);
-    } else {
-        TRANSITION_TO(task_idle);
+    switch (class) {
+        case CLASS_STATIONARY:
+            CHAN_OUT(model_stationary[trainingSetSize], features, CH(task_train, task_classify));
+            break;
+        case CLASS_MOVING:
+            CHAN_OUT(model_moving[trainingSetSize], features, CH(task_train, task_classify));
+            break;
     }
+
+    trainingSetSize++;
+    printf("train: class %u count %u/%u\r\n", class,
+           trainingSetSize, TRAINING_SET_SIZE);
+    CHAN_OUT(trainingSetSize, trainingSetSize, SELF_IN_CH(task_train));
+
+    if (trainingSetSize < TRAINING_SET_SIZE)
+        TRANSITION_TO(task_sample);
+    else
+        TRANSITION_TO(task_idle);
 }
 
 void task_idle() {
