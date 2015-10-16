@@ -22,7 +22,7 @@
 
 // Number of samples to discard before recording training set
 #define NUM_WARMUP_SAMPLES 5
-#define TRANING_SET_SIZE MODEL_COMPARISONS
+#define TRAINING_SET_SIZE MODEL_COMPARISONS
 
 #define ACCEL_WINDOW_SIZE 4
 #define MODEL_COMPARISONS 5
