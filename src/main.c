@@ -12,8 +12,10 @@
 
 #include "pins.h"
 
-#define USE_LEDS
-#define FLASH_ON_BOOT
+#define SHOW_RESULT_ON_LEDS
+#define SHOW_PROGRESS_ON_LEDS
+#define SHOW_BOOT_ON_LEDS
+
 #define ENABLE_PRINTF
 
 #define MODEL_SIZE 95
@@ -226,7 +228,7 @@ void initializeHardware()
 
     UART_init();
 
-#if defined(USE_LEDS) && defined(FLASH_ON_BOOT)
+#ifdef SHOW_BOOT_ON_LEDS
     GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
     GPIO(PORT_LED_2, OUT) |= BIT(PIN_LED_2);
     delay(0xfffff);
@@ -293,7 +295,9 @@ void task_init()
 }
 void task_selectMode()
 {
+#ifdef SHOW_PROGRESS_ON_LEDS
     blink(SELECT_MODE_BLINKS, SELECT_MODE_BLINK_DURATION, LED1 | LED2);
+#endif
 
     uint8_t pin_state = GPIO(PORT_AUX, IN) & (BIT(PIN_AUX_1) | BIT(PIN_AUX_2));
 
@@ -350,7 +354,9 @@ void task_sample()
 
     printf("sample\r\n");
 
+#ifdef SHOW_PROGRESS_ON_LEDS
     blink(SAMPLE_BLINKS, SAMPLE_BLINK_DURATION, LED1 | LED2);
+#endif
 
     ACCEL_singleSample(&sample);
 
@@ -401,7 +407,9 @@ void task_featurize()
 
    printf("featurize\r\n");
 
+#ifdef SHOW_PROGRESS_ON_LEDS
    blink(FEATURIZE_BLINKS, FEATURIZE_BLINK_DURATION, LED1 | LED2);
+#endif
  
    mean.x = mean.y = mean.z = 0;
    stddev.x = stddev.y = stddev.z = 0;
@@ -553,9 +561,9 @@ void task_stats()
     switch (class) {
         case CLASS_MOVING:
 
-#if defined (USE_LEDS)
+#if defined (SHOW_RESULT_ON_LEDS)
             blink(CLASSIFY_BLINKS, CLASSIFY_BLINK_DURATION, LED1);
-#endif //USE_LEDS
+#endif //SHOW_RESULT_ON_LEDS
 
             movingCount = *CHAN_IN2(movingCount, CH(task_resetStats, task_stats),
                                                 SELF_IN_CH(task_stats));
@@ -565,9 +573,9 @@ void task_stats()
             break;
         case CLASS_STATIONARY:
 
-#if defined (USE_LEDS)
+#if defined (SHOW_RESULT_ON_LEDS)
             blink(CLASSIFY_BLINKS, CLASSIFY_BLINK_DURATION, LED2);
-#endif //USE_LEDS
+#endif //SHOW_RESULT_ON_LEDS
 
             stationaryCount = *CHAN_IN2(stationaryCount, CH(task_resetStats, task_stats),
                                                       SELF_IN_CH(task_stats));
@@ -590,7 +598,7 @@ void task_stats()
         printf("stats: total %u stat %u%% moving %u%%\r\n",
                totalCount, (unsigned)resultStationaryPct, (unsigned)resultMovingPct);
 
-#if defined (USE_LEDS)
+#if defined (SHOW_RESULT_ON_LEDS)
         P4OUT &= ~PIN_LED2;
         PJOUT &= ~PIN_LED1;
 #endif
@@ -608,7 +616,9 @@ void task_warmup()
 
     printf("warmup\r\n");
 
+#ifdef SHOW_PROGRESS_ON_LEDS
     blink(WARMUP_BLINKS, WARMUP_BLINK_DURATION, LED1 | LED2);
+#endif
 
     discardedSamplesCount = *CHAN_IN2(discardedSamplesCount,
                                      CH(task_selectMode, task_warmup),
@@ -641,7 +651,9 @@ void task_train()
 
     printf("train\r\n");
 
+#ifdef SHOW_PROGRESS_ON_LEDS
     blink(TRAIN_BLINKS, TRAIN_BLINK_DURATION, LED1 | LED2);
+#endif
 
     features = *CHAN_IN1(features, CH(task_featurize, task_train));
     trainingSetSize = *CHAN_IN2(trainingSetSize, CH(task_warmup, task_train),
@@ -669,7 +681,9 @@ void task_train()
 }
 
 void task_idle() {
+#ifdef SHOW_PROGRESS_ON_LEDS
     blink(IDLE_BLINKS, IDLE_BLINK_DURATION, LED1 | LED2);
+#endif
 
     printf("idle\r\n");
 
