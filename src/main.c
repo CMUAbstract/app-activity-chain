@@ -594,6 +594,23 @@ void task_stats()
     }
 
     if (totalCount > SAMPLES_TO_COLLECT) {
+
+        // Get the other count from the channel: this only happens once per
+        // acquisition run: we're saving 50% reads all other times.
+        switch (class) {
+            case CLASS_MOVING:
+                stationaryCount = *CHAN_IN2(stationaryCount,
+                                            CH(task_resetStats, task_stats),
+                                            SELF_IN_CH(task_stats));
+                break;
+            case CLASS_STATIONARY:
+                movingCount = *CHAN_IN2(movingCount,
+                                        CH(task_resetStats, task_stats),
+                                        SELF_IN_CH(task_stats));
+                break;
+        }
+
+
         // This is "I/O" (specifically, output). Yes, it's to non-volatile
         // memory, which may seem confusing, but for this program to have any
         // purpose, there needs to be I/O of the computed results to somewhere.
