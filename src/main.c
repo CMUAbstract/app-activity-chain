@@ -162,6 +162,7 @@ CHANNEL(task_init, task_classify, msg_model);
 CHANNEL(task_selectMode, task_warmup, msg_warmup);
 CHANNEL(task_selectMode, task_featurize, msg_mode);
 CHANNEL(task_selectMode, task_train, msg_class);
+CHANNEL(task_selectMode, task_sample, msg_windowSize);
 
 CHANNEL(task_resetStats, task_stats, msg_stats);
 CHANNEL(task_resetStats, task_sample, msg_windowSize);
@@ -308,6 +309,7 @@ void task_selectMode()
             CHAN_OUT(discardedSamplesCount, 0, CH(task_selectMode, task_warmup));
             CHAN_OUT(mode, MODE_TRAIN_STATIONARY, CH(task_selectMode, task_featurize));
             CHAN_OUT(class, CLASS_STATIONARY, CH(task_selectMode, task_train));
+            CHAN_OUT(samplesInWindow, 0, CH(task_selectMode, task_sample));
 
             TRANSITION_TO(task_warmup);
             break;
@@ -316,6 +318,7 @@ void task_selectMode()
             CHAN_OUT(discardedSamplesCount, 0, CH(task_selectMode, task_warmup));
             CHAN_OUT(mode, MODE_TRAIN_MOVING, CH(task_selectMode, task_featurize));
             CHAN_OUT(class, CLASS_MOVING, CH(task_selectMode, task_train));
+            CHAN_OUT(samplesInWindow, 0, CH(task_selectMode, task_sample));
 
             TRANSITION_TO(task_warmup);
             break;
@@ -360,13 +363,16 @@ void task_sample()
 
     ACCEL_singleSample(&sample);
 
-    samplesInWindow = *CHAN_IN2(samplesInWindow,
+    samplesInWindow = *CHAN_IN3(samplesInWindow,
                                CH(task_resetStats, task_sample),
+                               CH(task_selectMode, task_sample),
                                SELF_IN_CH(task_sample));
 
-    samplesInWindow++;
     CHAN_OUT(window[samplesInWindow], sample,
              MC_OUT_CH(ch_sample_window, task_sample, task_transform, task_featurize));
+    samplesInWindow++;
+    printf("sample: sample %u %u %u window %u\r\n",
+           sample.x, sample.y, sample.z, samplesInWindow);
 
     if (samplesInWindow < ACCEL_WINDOW_SIZE) {
         CHAN_OUT(samplesInWindow, samplesInWindow, SELF_OUT_CH(task_sample));
