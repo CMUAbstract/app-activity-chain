@@ -38,6 +38,8 @@
 
 #define SEC_TO_CYCLES 4000000 /* 4 MHz */
 
+#define IDLE_WAIT SEC_TO_CYCLES
+
 #define IDLE_BLINKS 1
 #define IDLE_BLINK_DURATION SEC_TO_CYCLES
 #define SELECT_MODE_BLINKS  4
@@ -690,6 +692,7 @@ void task_idle() {
 #ifdef SHOW_PROGRESS_ON_LEDS
     blink(IDLE_BLINKS, IDLE_BLINK_DURATION, LED1 | LED2);
 #endif
+    delay(IDLE_WAIT);
 
     printf("idle\r\n");
 
