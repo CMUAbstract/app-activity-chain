@@ -592,6 +592,13 @@ void task_stats()
             movingCount++;
             printf("stats: moving %u\r\n", movingCount);
             CHAN_OUT(movingCount, movingCount, SELF_OUT_CH(task_stats));
+
+            // TODO: major design question: per-field double buffering? For now, proxy.
+            stationaryCount = *CHAN_IN2(stationaryCount,
+                                        CH(task_resetStats, task_stats),
+                                        SELF_IN_CH(task_stats));
+            CHAN_OUT(stationaryCount, stationaryCount, SELF_OUT_CH(task_stats));
+
             break;
         case CLASS_STATIONARY:
 
@@ -604,6 +611,12 @@ void task_stats()
             stationaryCount++;
             printf("stats: stationary %u\r\n", stationaryCount);
             CHAN_OUT(stationaryCount, stationaryCount, SELF_OUT_CH(task_stats));
+
+            // TODO: major design question: per-field double buffering? For now, proxy.
+            movingCount = *CHAN_IN2(movingCount, CH(task_resetStats, task_stats),
+                                                SELF_IN_CH(task_stats));
+            CHAN_OUT(movingCount, movingCount, SELF_OUT_CH(task_stats));
+
             break;
     }
 
