@@ -471,6 +471,9 @@ void task_featurize()
  
    mode = *CHAN_IN1(mode, CH(task_selectMode, task_featurize));
 
+   printf("featurize: features: mean %u stddev %u\r\n",
+           features.meanmag, features.stddevmag);
+
    switch (mode) {
        case MODE_TRAIN_STATIONARY:
        case MODE_TRAIN_MOVING:
@@ -620,8 +623,9 @@ void task_stats()
         resultStationaryPct = ((float)stationaryCount / (float)totalCount) * 100.0f;
         resultMovingPct = ((float)movingCount / (float)totalCount) * 100.0f;
 
-        printf("stats: total %u stat %u%% moving %u%%\r\n",
-               totalCount, (unsigned)resultStationaryPct, (unsigned)resultMovingPct);
+        printf("stats: stat %u/%u (%u%%) moving %u/%u (%u%%)\r\n",
+               stationaryCount, totalCount, (unsigned)resultStationaryPct,
+               movingCount, totalCount, (unsigned)resultMovingPct);
 
 #if defined (SHOW_RESULT_ON_LEDS)
         P4OUT &= ~PIN_LED2;
