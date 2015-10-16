@@ -153,17 +153,17 @@ struct msg_features {
     CHAN_FIELD(features_t, features);
 };
 
-TASK(0, task_init)
-TASK(1, task_selectMode)
-TASK(2, task_resetStats)
-TASK(3, task_sample)
-TASK(4, task_transform)
-TASK(5, task_featurize)
-TASK(6, task_classify)
-TASK(7, task_stats)
-TASK(8, task_warmup)
-TASK(9, task_train)
-TASK(10, task_idle)
+TASK(1, task_init)
+TASK(2, task_selectMode)
+TASK(3, task_resetStats)
+TASK(4, task_sample)
+TASK(5, task_transform)
+TASK(6, task_featurize)
+TASK(7, task_classify)
+TASK(8, task_stats)
+TASK(9, task_warmup)
+TASK(10, task_train)
+TASK(11, task_idle)
 
 CHANNEL(task_init, task_classify, msg_model);
 
