@@ -10,13 +10,23 @@
 
 #include <libchain/chain.h>
 
+#ifdef CONFIG_LIBEDB_PRINTF
+#include <libedb/edb.h>
+#endif
+
 #include "pins.h"
+
+#ifdef CONFIG_LIBEDB_PRINTF
+#define printf(...) BARE_PRINTF(__VA_ARGS__)
+#else // CONFIG_LIBEDB_PRINTF
+#ifndef CONFIG_LIBMSPCONSOLE_PRINTF
+#define printf(...)
+#endif // CONFIG_LIBMSPCONSOLE_PRINTF
+#endif
 
 #define SHOW_RESULT_ON_LEDS
 #define SHOW_PROGRESS_ON_LEDS
 #define SHOW_BOOT_ON_LEDS
-
-#define ENABLE_PRINTF
 
 #define MODEL_SIZE 95
 
@@ -57,10 +67,6 @@
 
 #define LED1 (1 << 0)
 #define LED2 (1 << 1)
-
-#ifndef ENABLE_PRINTF
-#define printf(...)
-#endif
 
 // If you link-in wisp-base, then you have to define some symbols.
 uint8_t usrBank[USRBANK_SIZE];
@@ -229,7 +235,11 @@ void initializeHardware()
 #endif
 
 
+#if defined(CONFIG_LIBEDB_PRINTF)
+    BARE_PRINTF_ENABLE();
+#elif defined(CONFIG_LIBMSPCONSOLE_PRINTF)
     UART_init();
+#endif
 
 #ifdef SHOW_BOOT_ON_LEDS
     GPIO(PORT_LED_1, OUT) |= BIT(PIN_LED_1);
