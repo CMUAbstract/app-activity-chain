@@ -98,12 +98,6 @@ volatile __ro_nv const unsigned hardcoded_model_data_moving[] = {
 features_t *hardcoded_model_stationary = (features_t *)hardcoded_model_data_stationary;
 features_t *hardcoded_model_moving     = (features_t *)hardcoded_model_data_moving;
 
-/* End-results of the program are output into non-volatile memory.
- * Think of this as the "display" where we show the result of the long
- * (intermittent) computation. */
-volatile __nv float resultMovingPct;
-volatile __nv float resultStationaryPct;
-
 struct msg_stats {
     CHAN_FIELD(unsigned, totalCount);
     CHAN_FIELD(unsigned, movingCount);
@@ -711,18 +705,12 @@ void task_stats()
         }
 
 
-        // This is "I/O" (specifically, output). Yes, it's to non-volatile
-        // memory, which may seem confusing, but for this program to have any
-        // purpose, there needs to be I/O of the computed results to somewhere.
-        // In channels model, this simply becomes explicit, because channel
-        // non-volatile memory space has nothing to do with the memory space
-        // where the results happen to be output.
-        resultStationaryPct = ((float)stationaryCount / (float)totalCount) * 100.0f;
-        resultMovingPct = ((float)movingCount / (float)totalCount) * 100.0f;
+        unsigned resultStationaryPct = ((float)stationaryCount / (float)totalCount) * 100.0f;
+        unsigned resultMovingPct = ((float)movingCount / (float)totalCount) * 100.0f;
 
-        printf("stats: stat %u/%u (%u%%) moving %u/%u (%u%%)\r\n",
-               stationaryCount, totalCount, (unsigned)resultStationaryPct,
-               movingCount, totalCount, (unsigned)resultMovingPct);
+        PRINTF("stats: stat %u/%u (%u%%) moving %u/%u (%u%%)\r\n",
+               stationaryCount, totalCount, resultStationaryPct,
+               movingCount, totalCount, resultMovingPct);
 
 #if defined (SHOW_RESULT_ON_LEDS)
         P4OUT &= ~PIN_LED2;
