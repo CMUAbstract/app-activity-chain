@@ -267,7 +267,7 @@ void initializeHardware()
 
     __enable_interrupt();
 
-    printf("init: initializing accel\r\n");
+    LOG("init: initializing accel\r\n");
 
     // AUX pins select run mode: configure as inputs with pull-ups
     GPIO(PORT_AUX, DIR) &= ~(BIT(PIN_AUX_1) | BIT(PIN_AUX_2));
@@ -295,14 +295,16 @@ void initializeHardware()
     __delay_cycles(5);
     ACCEL_readID(&accelID);
 
-    printf("init: accel hw id: 0x%x\r\n", accelID.x);
+    LOG("init: accel hw id: 0x%x\r\n", accelID.x);
+
+    PRINTF(".%u.\r\n", curctx->task->idx);
 }
 
 void task_init()
 {
     unsigned i;
 
-    printf("init\r\n");
+    LOG("init\r\n");
 
     // Until training happens, we use the hardcoded model. To keep
     // the classify task unaware of where the model came from, we
@@ -337,7 +339,7 @@ void task_selectMode()
 
     uint8_t pin_state = GPIO(PORT_AUX, IN) & (BIT(PIN_AUX_1) | BIT(PIN_AUX_2));
 
-    printf("selectMode: 0x%x\r\n", pin_state);
+    LOG("selectMode: 0x%x\r\n", pin_state);
 
     switch(pin_state) {
         case MODE_TRAIN_STATIONARY:
@@ -389,7 +391,7 @@ void task_resetStats()
 
     // NOTE: could roll this into selectMode task, but no compelling reason
 
-    printf("resetStats\r\n");
+    LOG("resetStats\r\n");
 
     // NOTE: not combined into one struct because not all code paths use both
     CHAN_OUT1(unsigned, movingCount, zero, CH(task_resetStats, task_stats));
@@ -406,7 +408,7 @@ void task_sample()
     accelReading sample;
     unsigned samplesInWindow;
 
-    printf("sample\r\n");
+    LOG("sample\r\n");
 
 #ifdef SHOW_PROGRESS_ON_LEDS
     blink(SAMPLE_BLINKS, SAMPLE_BLINK_DURATION, LED1 | LED2);
@@ -423,7 +425,7 @@ void task_sample()
              MC_OUT_CH(ch_sample_window, task_sample,
                        task_transform, task_featurize));
     samplesInWindow++;
-    printf("sample: sample %u %u %u window %u\r\n",
+    LOG("sample: sample %u %u %u window %u\r\n",
            sample.x, sample.y, sample.z, samplesInWindow);
 
     if (samplesInWindow < ACCEL_WINDOW_SIZE) {
@@ -441,7 +443,7 @@ void task_transform()
 {
     unsigned i;
 
-    printf("transform\r\n");
+    LOG("transform\r\n");
 
     accelReading *sample;
     accelReading transformedSample;
@@ -476,7 +478,7 @@ void task_featurize()
    features_t features;
    run_mode_t mode;
 
-   printf("featurize\r\n");
+   LOG("featurize\r\n");
 
 #ifdef SHOW_PROGRESS_ON_LEDS
    blink(FEATURIZE_BLINKS, FEATURIZE_BLINK_DURATION, LED1 | LED2);
@@ -536,7 +538,7 @@ void task_featurize()
  
    mode = *CHAN_IN1(run_mode_t, mode, CH(task_selectMode, task_featurize));
 
-   printf("featurize: features: mean %u stddev %u\r\n",
+   LOG("featurize: features: mean %u stddev %u\r\n",
            features.meanmag, features.stddevmag);
 
    switch (mode) {
@@ -567,7 +569,7 @@ void task_classify() {
     long int stddevmag;
     features_t model_features;
 
-   printf("classify\r\n");
+   LOG("classify\r\n");
   
     features = *CHAN_IN1(features_t, features,
                          CH(task_featurize, task_classify));
@@ -617,7 +619,7 @@ void task_classify() {
     class = (move_less_error > stat_less_error) ? CLASS_MOVING : CLASS_STATIONARY;
     CHAN_OUT1(class_t, class, class, CH(task_classify, task_stats));
 
-    printf("classify: class 0x%x\r\n", class);
+    LOG("classify: class 0x%x\r\n", class);
   
     TRANSITION_TO(task_stats);
 }
@@ -627,14 +629,14 @@ void task_stats()
     unsigned totalCount = 0, movingCount = 0, stationaryCount = 0;
     class_t class;
 
-    printf("stats\r\n");
+    LOG("stats\r\n");
 
     totalCount = *CHAN_IN2(unsigned, totalCount,
                            CH(task_resetStats, task_stats),
                            SELF_IN_CH(task_stats));
 
     totalCount++;
-    printf("stats: total %u\r\n", totalCount);
+    LOG("stats: total %u\r\n", totalCount);
 
     CHAN_OUT1(unsigned, totalCount, totalCount, SELF_OUT_CH(task_stats));
 
@@ -651,7 +653,7 @@ void task_stats()
                                     CH(task_resetStats, task_stats),
                                     SELF_IN_CH(task_stats));
             movingCount++;
-            printf("stats: moving %u\r\n", movingCount);
+            LOG("stats: moving %u\r\n", movingCount);
             CHAN_OUT1(unsigned, movingCount, movingCount,
                       SELF_OUT_CH(task_stats));
 
@@ -673,7 +675,7 @@ void task_stats()
                                         CH(task_resetStats, task_stats),
                                         SELF_IN_CH(task_stats));
             stationaryCount++;
-            printf("stats: stationary %u\r\n", stationaryCount);
+            LOG("stats: stationary %u\r\n", stationaryCount);
             CHAN_OUT1(unsigned, stationaryCount, stationaryCount,
                       SELF_OUT_CH(task_stats));
 
@@ -728,7 +730,7 @@ void task_warmup()
     unsigned discardedSamplesCount;
     threeAxis_t_8 sample;
 
-    printf("warmup\r\n");
+    LOG("warmup\r\n");
 
 #ifdef SHOW_PROGRESS_ON_LEDS
     blink(WARMUP_BLINKS, WARMUP_BLINK_DURATION, LED1 | LED2);
@@ -748,7 +750,7 @@ void task_warmup()
         ACCEL_singleSample(&sample);
     
         discardedSamplesCount++;
-        printf("warmup: discarded %u\r\n", discardedSamplesCount);
+        LOG("warmup: discarded %u\r\n", discardedSamplesCount);
         CHAN_OUT1(unsigned, discardedSamplesCount, discardedSamplesCount,
                   SELF_OUT_CH(task_warmup));
         TRANSITION_TO(task_warmup);
@@ -765,7 +767,7 @@ void task_train()
     unsigned trainingSetSize;;
     unsigned class;
 
-    printf("train\r\n");
+    LOG("train\r\n");
 
 #ifdef SHOW_PROGRESS_ON_LEDS
     blink(TRAIN_BLINKS, TRAIN_BLINK_DURATION, LED1 | LED2);
@@ -789,7 +791,7 @@ void task_train()
     }
 
     trainingSetSize++;
-    printf("train: class %u count %u/%u\r\n", class,
+    LOG("train: class %u count %u/%u\r\n", class,
            trainingSetSize, TRAINING_SET_SIZE);
     CHAN_OUT1(unsigned, trainingSetSize, trainingSetSize,
               SELF_IN_CH(task_train));
@@ -806,7 +808,7 @@ void task_idle() {
 #endif
     delay(IDLE_WAIT);
 
-    printf("idle\r\n");
+    LOG("idle\r\n");
 
     TRANSITION_TO(task_selectMode);
 }
