@@ -5,9 +5,6 @@
 // (a control bit for TAxCCTLx uses the name 'OUT')
 #undef OUT
 
-#define BOARD_WISP
-// #define BOARD_MSP_TS430
-
 #define BIT_INNER(idx) BIT ## idx
 #define BIT(idx) BIT_INNER(idx)
 
