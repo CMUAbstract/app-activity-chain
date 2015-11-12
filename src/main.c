@@ -22,14 +22,11 @@
 // #define SHOW_PROGRESS_ON_LEDS
 // #define SHOW_BOOT_ON_LEDS
 
-#define MODEL_SIZE 95
-
 // Number of samples to discard before recording training set
 #define NUM_WARMUP_SAMPLES 3
-#define TRAINING_SET_SIZE MODEL_COMPARISONS
 
 #define ACCEL_WINDOW_SIZE 3
-#define MODEL_COMPARISONS 32
+#define MODEL_SIZE 32
 #define SAMPLE_NOISE_FLOOR 10 // TODO: made up value
 
 // Number of classifications to complete in one experiment
@@ -79,22 +76,6 @@ typedef enum {
     MODE_TRAIN_MOVING = BIT(PIN_AUX_2),
     MODE_ACQUIRE = (BIT(PIN_AUX_1) | BIT(PIN_AUX_2)),
 } run_mode_t;
-
-// We support using a model that is either
-//   (1) acquired at runtime (via training phase)
-//   (2) hardcoded
-//
-// This is the hardcoded model data.
-
-volatile __ro_nv const unsigned hardcoded_model_data_stationary[] = {
-#include "int_wisp5_stationary.h"
-};
-volatile __ro_nv const unsigned hardcoded_model_data_moving[] = {
-#include "int_wisp5_flapping.h"
-};
-
-features_t *hardcoded_model_stationary = (features_t *)hardcoded_model_data_stationary;
-features_t *hardcoded_model_moving     = (features_t *)hardcoded_model_data_moving;
 
 struct msg_stats {
     CHAN_FIELD(unsigned, totalCount);
@@ -314,27 +295,7 @@ void initializeHardware()
 
 void task_init()
 {
-    unsigned i;
-
     LOG("init\r\n");
-
-    // Until training happens, we use the hardcoded model. To keep
-    // the classify task unaware of where the model came from, we
-    // we channel the respective model to it. To be able to channel
-    // the hardcoded model to classify later, some task must
-    // first write it into a channel. This is a copy and is controvertial.
-    //
-    // It might be possible to arrange for this "copy" to happen at compile
-    // time: it is essentially an initialization of a variable. Perhaps,
-    // a channel declaration could take an initial value.
-    //
-    // As it stands now this is a struct assignment: a copy.
-    for (i = 0; i < MODEL_SIZE; ++i) {
-        CHAN_OUT1(features_t, model_stationary[i], hardcoded_model_stationary[i],
-                 CH(task_init, task_classify));
-        CHAN_OUT1(features_t, model_moving[i], hardcoded_model_moving[i],
-                  CH(task_init, task_classify));
-    }
 
     uint8_t pin_state = MODE_IDLE;
     CHAN_OUT1(uint8_t, pin_state, pin_state, CH(task_init, task_selectMode));
@@ -607,7 +568,7 @@ void task_classify() {
     meanmag = features.meanmag;
     stddevmag = features.stddevmag;
   
-    for (i = 0; i < MODEL_COMPARISONS; i += NUM_FEATURES) {
+    for (i = 0; i < MODEL_SIZE; i += NUM_FEATURES) {
         model_features = *CHAN_IN2(features_t, model_stationary[i],
                                    CH(task_init, task_classify),
                                    CH(task_train, task_classify));
@@ -819,11 +780,11 @@ void task_train()
 
     trainingSetSize++;
     LOG("train: class %u count %u/%u\r\n", class,
-           trainingSetSize, TRAINING_SET_SIZE);
+           trainingSetSize, MODEL_SIZE);
     CHAN_OUT1(unsigned, trainingSetSize, trainingSetSize,
               SELF_IN_CH(task_train));
 
-    if (trainingSetSize < TRAINING_SET_SIZE) {
+    if (trainingSetSize < MODEL_SIZE) {
         TRANSITION_TO(task_sample);
     } else {
         PRINTF("train: class %u completed\r\n", class);
