@@ -170,6 +170,17 @@ struct msg_features {
     CHAN_FIELD(features_t, features);
 };
 
+struct msg_pinState {
+    CHAN_FIELD(uint8_t, pin_state);
+};
+
+struct msg_self_pinState {
+    SELF_CHAN_FIELD(uint8_t, pin_state);
+};
+#define FIELD_INIT_msg_self_pinState {\
+    SELF_FIELD_INITIALIZER \
+}
+
 TASK(1, task_init)
 TASK(2, task_selectMode)
 TASK(3, task_resetStats)
@@ -183,11 +194,13 @@ TASK(10, task_train)
 TASK(11, task_idle)
 
 CHANNEL(task_init, task_classify, msg_model);
+CHANNEL(task_init, task_selectMode, msg_pinState);
 
 CHANNEL(task_selectMode, task_warmup, msg_warmup);
 CHANNEL(task_selectMode, task_featurize, msg_mode);
 CHANNEL(task_selectMode, task_train, msg_class);
 CHANNEL(task_selectMode, task_sample, msg_windowSize);
+SELF_CHANNEL(task_selectMode, msg_self_pinState);
 
 CHANNEL(task_resetStats, task_stats, msg_stats);
 CHANNEL(task_resetStats, task_sample, msg_windowSize);
@@ -325,6 +338,9 @@ void task_init()
                   CH(task_init, task_classify));
     }
 
+    uint8_t pin_state = MODE_IDLE;
+    CHAN_OUT1(uint8_t, pin_state, pin_state, CH(task_init, task_selectMode));
+
     TRANSITION_TO(task_selectMode);
 }
 void task_selectMode()
@@ -339,6 +355,18 @@ void task_selectMode()
 #endif
 
     uint8_t pin_state = GPIO(PORT_AUX, IN) & (BIT(PIN_AUX_1) | BIT(PIN_AUX_2));
+
+    // Don't re-launch training after finishing training
+    uint8_t prev_pin_state = *CHAN_IN2(uint8_t, pin_state,
+                                       CH(task_init, task_selectMode),
+                                       SELF_IN_CH(task_selectMode));
+    if ((pin_state == MODE_TRAIN_STATIONARY ||
+        pin_state == MODE_TRAIN_MOVING) &&
+        pin_state == prev_pin_state) {
+        pin_state = MODE_IDLE;
+    } else {
+        CHAN_OUT1(uint8_t, pin_state, pin_state, SELF_OUT_CH(task_selectMode));
+    }
 
     LOG("selectMode: 0x%x\r\n", pin_state);
 
