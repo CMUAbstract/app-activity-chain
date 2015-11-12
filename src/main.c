@@ -718,7 +718,7 @@ void task_stats()
             break;
     }
 
-    if (totalCount > SAMPLES_TO_COLLECT) {
+    if (totalCount == SAMPLES_TO_COLLECT) {
 
         // Get the other count from the channel: this only happens once per
         // acquisition run: we're saving 50% reads all other times.
