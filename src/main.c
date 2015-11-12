@@ -281,8 +281,7 @@ void initializeHardware()
     // ACCEL_SetReg(0x2D,0x02);
 
     /* TODO: move the below stuff to accel.c */
-    BITSET(P4SEL1, PIN_ACCEL_EN);
-    BITSET(P4SEL0, PIN_ACCEL_EN);
+    BITSET(P4OUT, PIN_ACCEL_EN);
 
     BITSET(P2SEL1, PIN_ACCEL_SCLK | PIN_ACCEL_MISO | PIN_ACCEL_MOSI);
     BITCLR(P2SEL0, PIN_ACCEL_SCLK | PIN_ACCEL_MISO | PIN_ACCEL_MOSI);
