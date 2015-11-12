@@ -825,10 +825,12 @@ void task_train()
     CHAN_OUT1(unsigned, trainingSetSize, trainingSetSize,
               SELF_IN_CH(task_train));
 
-    if (trainingSetSize < TRAINING_SET_SIZE)
+    if (trainingSetSize < TRAINING_SET_SIZE) {
         TRANSITION_TO(task_sample);
-    else
+    } else {
+        PRINTF("train: class %u completed\r\n", class);
         TRANSITION_TO(task_idle);
+    }
 }
 
 void task_idle() {
