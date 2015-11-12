@@ -684,9 +684,11 @@ void task_stats()
         unsigned resultStationaryPct = ((float)stationaryCount / (float)totalCount) * 100.0f;
         unsigned resultMovingPct = ((float)movingCount / (float)totalCount) * 100.0f;
 
-        PRINTF("stats: stat %u/%u (%u%%) moving %u/%u (%u%%)\r\n",
-               stationaryCount, totalCount, resultStationaryPct,
-               movingCount, totalCount, resultMovingPct);
+        unsigned sum = stationaryCount + movingCount;
+        PRINTF("stats: s %u (%u%%) m %u (%u%%) sum/tot %u/%u: %c\r\n",
+               stationaryCount, resultStationaryPct,
+               movingCount, resultMovingPct,
+               totalCount, sum, sum == totalCount ? 'V' : 'X');
 
 #if defined (SHOW_RESULT_ON_LEDS)
         P4OUT &= ~PIN_LED2;
