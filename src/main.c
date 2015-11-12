@@ -773,7 +773,8 @@ void task_train()
     if (trainingSetSize < MODEL_SIZE) {
         TRANSITION_TO(task_sample);
     } else {
-        PRINTF("train: class %u completed\r\n", class);
+        PRINTF("train: class %u done (mn %u sd %u)\r\n",
+               class, features.meanmag, features.stddevmag);
         TRANSITION_TO(task_idle);
     }
 }
