@@ -30,7 +30,7 @@
 #define SAMPLE_NOISE_FLOOR 10 // TODO: made up value
 
 // Number of classifications to complete in one experiment
-#define SAMPLES_TO_COLLECT 16
+#define SAMPLES_TO_COLLECT 512
 
 // two features: mean & stdev
 #define NUM_FEATURES 2
