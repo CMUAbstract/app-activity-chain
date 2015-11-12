@@ -785,7 +785,9 @@ void task_idle() {
 #ifdef SHOW_PROGRESS_ON_LEDS
     blink(IDLE_BLINKS, IDLE_BLINK_DURATION, LED1 | LED2);
 #endif
+#if CONT_POWER
     delay(IDLE_WAIT);
+#endif
 
     LOG("idle\r\n");
 
