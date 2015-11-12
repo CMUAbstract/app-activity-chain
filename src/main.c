@@ -71,10 +71,10 @@ typedef enum {
 } class_t;
 
 typedef enum {
-    MODE_IDLE = 0,
+    MODE_IDLE = (BIT(PIN_AUX_1) | BIT(PIN_AUX_2)),
     MODE_TRAIN_STATIONARY = BIT(PIN_AUX_1),
     MODE_TRAIN_MOVING = BIT(PIN_AUX_2),
-    MODE_ACQUIRE = (BIT(PIN_AUX_1) | BIT(PIN_AUX_2)),
+    MODE_ACQUIRE = 0, // default
 } run_mode_t;
 
 struct msg_stats {
