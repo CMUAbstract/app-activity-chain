@@ -279,13 +279,13 @@ void initializeHardware()
 
     BITSET(P2SEL1, PIN_ACCEL_SCLK | PIN_ACCEL_MISO | PIN_ACCEL_MOSI);
     BITCLR(P2SEL0, PIN_ACCEL_SCLK | PIN_ACCEL_MISO | PIN_ACCEL_MOSI);
-    __delay_cycles(5);
+    __delay_cycles(1000);
     SPI_initialize();
-    __delay_cycles(5);
+    __delay_cycles(1000);
     ACCEL_range();
-    __delay_cycles(5);
+    __delay_cycles(1000);
     ACCEL_initialize();
-    __delay_cycles(5);
+    __delay_cycles(1000);
     ACCEL_readID(&accelID);
 
     LOG("init: accel hw id: 0x%x\r\n", accelID.x);
