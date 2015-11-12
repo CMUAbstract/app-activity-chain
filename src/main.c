@@ -18,9 +18,9 @@
 
 #include "pins.h"
 
-#define SHOW_RESULT_ON_LEDS
-#define SHOW_PROGRESS_ON_LEDS
-#define SHOW_BOOT_ON_LEDS
+// #define SHOW_RESULT_ON_LEDS
+// #define SHOW_PROGRESS_ON_LEDS
+// #define SHOW_BOOT_ON_LEDS
 
 #define MODEL_SIZE 95
 
@@ -225,6 +225,7 @@ static void delay(uint32_t cycles)
         __delay_cycles(1U << 15);
 }
 
+#if defined(SHOW_RESULT_ON_LEDS) || defined(SHOW_PROGRESS_ON_LEDS)
 static void blink(unsigned count, uint32_t duration, unsigned leds)
 {
     unsigned i;
@@ -237,6 +238,7 @@ static void blink(unsigned count, uint32_t duration, unsigned leds)
         delay(duration / 2);
     }
 }
+#endif
 
 void initializeHardware()
 {
