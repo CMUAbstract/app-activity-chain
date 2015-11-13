@@ -7,7 +7,9 @@
 #include <wisp-base.h>
 #include <accel.h>
 #include <spi.h>
+
 #include <msp-builtins.h>
+#include <msp-math.h>
 
 #include <libmsp/mem.h>
 #include <libio/log.h>
@@ -503,16 +505,11 @@ void task_featurize()
    stddev.y >>= 2;
    stddev.z >>= 2;
  
-   float meanmag_f = (float)
-     ((mean.x*mean.x) + (mean.y*mean.y) + (mean.z*mean.z));
-   float stddevmag_f = (float)
-     ((stddev.x*stddev.x) + (stddev.y*stddev.y) + (stddev.z*stddev.z));
- 
-   meanmag_f   = sqrtf(meanmag_f);
-   stddevmag_f = sqrtf(stddevmag_f);
- 
-   features.meanmag   = (long)meanmag_f;
-   features.stddevmag = (long)stddevmag_f;
+    unsigned meanmag = mean.x*mean.x + mean.y*mean.y + mean.z*mean.z;
+    unsigned stddevmag = stddev.x*stddev.x + stddev.y*stddev.y + stddev.z*stddev.z;
+
+    features.meanmag   = sqrt16(meanmag);
+    features.stddevmag = sqrt16(stddevmag);
  
    mode = *CHAN_IN1(run_mode_t, mode, CH(task_selectMode, task_featurize));
 
@@ -671,8 +668,8 @@ void task_stats()
         }
 
 
-        unsigned resultStationaryPct = ((float)stationaryCount / (float)totalCount) * 100.0f;
-        unsigned resultMovingPct = ((float)movingCount / (float)totalCount) * 100.0f;
+        unsigned resultStationaryPct = stationaryCount * 100 / totalCount;
+        unsigned resultMovingPct = movingCount * 100 / totalCount;
 
         unsigned sum = stationaryCount + movingCount;
         PRINTF("stats: s %u (%u%%) m %u (%u%%) sum/tot %u/%u: %c\r\n",

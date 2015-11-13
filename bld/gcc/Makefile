@@ -18,11 +18,13 @@ CFLAGS += \
 	-I$(WISP_BASE_ROOT)/Sensors \
 	-I$(WISP_BASE_ROOT)/wired \
 	-I$(LIBMSPBUILTINS_ROOT)/src/include \
+	-I$(LIBMSPMATH_ROOT)/src/include \
 
 LFLAGS += \
+	-L$(LIBMSPMATH_ROOT)/bld/gcc \
 
 LIBS += \
 	-lwisp-base \
-	-lm \
+	-lmspmath \
 
 VPATH = ../../src
