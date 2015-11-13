@@ -32,9 +32,6 @@
 // Number of classifications to complete in one experiment
 #define SAMPLES_TO_COLLECT 512
 
-// two features: mean & stdev
-#define NUM_FEATURES 2
-
 #define SEC_TO_CYCLES 4000000 /* 4 MHz */
 
 #define IDLE_WAIT SEC_TO_CYCLES
@@ -568,7 +565,7 @@ void task_classify() {
     meanmag = features.meanmag;
     stddevmag = features.stddevmag;
   
-    for (i = 0; i < MODEL_SIZE; i += NUM_FEATURES) {
+    for (i = 0; i < MODEL_SIZE; ++i) {
         model_features = *CHAN_IN2(features_t, model_stationary[i],
                                    CH(task_init, task_classify),
                                    CH(task_train, task_classify));
