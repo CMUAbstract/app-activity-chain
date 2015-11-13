@@ -74,7 +74,7 @@ typedef enum {
     MODE_IDLE = (BIT(PIN_AUX_1) | BIT(PIN_AUX_2)),
     MODE_TRAIN_STATIONARY = BIT(PIN_AUX_1),
     MODE_TRAIN_MOVING = BIT(PIN_AUX_2),
-    MODE_ACQUIRE = 0, // default
+    MODE_RECOGNIZE = 0, // default
 } run_mode_t;
 
 struct msg_stats {
@@ -360,8 +360,8 @@ void task_selectMode()
             TRANSITION_TO(task_warmup);
             break;
 
-        case MODE_ACQUIRE:
-            mode = MODE_ACQUIRE;
+        case MODE_RECOGNIZE:
+            mode = MODE_RECOGNIZE;
             CHAN_OUT1(run_mode_t, mode, mode,
                       CH(task_selectMode, task_featurize));
 
@@ -536,7 +536,7 @@ void task_featurize()
                      CH(task_featurize, task_train));
            TRANSITION_TO(task_train);
            break;
-        case MODE_ACQUIRE:
+        case MODE_RECOGNIZE:
            CHAN_OUT1(features_t, features, features,
                      CH(task_featurize, task_classify));
            TRANSITION_TO(task_classify);
