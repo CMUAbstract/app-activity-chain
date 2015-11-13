@@ -29,11 +29,11 @@
 #define NUM_WARMUP_SAMPLES 3
 
 #define ACCEL_WINDOW_SIZE 3
-#define MODEL_SIZE 32
+#define MODEL_SIZE 16
 #define SAMPLE_NOISE_FLOOR 10 // TODO: made up value
 
 // Number of classifications to complete in one experiment
-#define SAMPLES_TO_COLLECT 512
+#define SAMPLES_TO_COLLECT 128
 
 #define SEC_TO_CYCLES 4000000 /* 4 MHz */
 
