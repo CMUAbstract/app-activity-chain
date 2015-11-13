@@ -7,6 +7,7 @@
 #include <wisp-base.h>
 #include <accel.h>
 #include <spi.h>
+#include <msp-builtins.h>
 
 #include <libmsp/mem.h>
 #include <libio/log.h>
@@ -199,14 +200,7 @@ CHANNEL(task_warmup, task_train, msg_train);
 SELF_CHANNEL(task_train, msg_self_train);
 CHANNEL(task_train, task_classify, msg_model);
 
-#ifdef __clang__
-void __delay_cycles(unsigned long cyc) {
-  unsigned i;
-  for (i = 0; i < (cyc >> 3); ++i)
-    ;
-}
-#endif
-
+#if defined(SHOW_RESULT_ON_LEDS) || defined(SHOW_PROGRESS_ON_LEDS)
 static void delay(uint32_t cycles)
 {
     unsigned i;
@@ -214,7 +208,6 @@ static void delay(uint32_t cycles)
         __delay_cycles(1U << 15);
 }
 
-#if defined(SHOW_RESULT_ON_LEDS) || defined(SHOW_PROGRESS_ON_LEDS)
 static void blink(unsigned count, uint32_t duration, unsigned leds)
 {
     unsigned i;

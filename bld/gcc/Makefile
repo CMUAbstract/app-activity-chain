@@ -17,6 +17,7 @@ include $(MAKER_ROOT)/Makefile.chain
 CFLAGS += \
 	-I$(WISP_BASE_ROOT)/Sensors \
 	-I$(WISP_BASE_ROOT)/wired \
+	-I$(LIBMSPBUILTINS_ROOT)/src/include \
 
 LFLAGS += \
 
