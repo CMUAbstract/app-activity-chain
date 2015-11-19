@@ -82,84 +82,32 @@ struct msg_stats {
     CHAN_FIELD(unsigned, movingCount);
     CHAN_FIELD(unsigned, stationaryCount);
 };
-
 struct msg_self_stats {
     SELF_CHAN_FIELD(unsigned, totalCount);
     SELF_CHAN_FIELD(unsigned, movingCount);
     SELF_CHAN_FIELD(unsigned, stationaryCount);
 };
-#define FIELD_INIT_msg_self_stats {\
-    SELF_FIELD_INITIALIZER, \
-    SELF_FIELD_INITIALIZER, \
-    SELF_FIELD_INITIALIZER, \
-}
-
-struct msg_train {
-    CHAN_FIELD(unsigned, trainingSetSize);
-};
-
-struct msg_self_train {
-    SELF_CHAN_FIELD(unsigned, trainingSetSize);
-};
-#define FIELD_INIT_msg_self_train {\
-    SELF_FIELD_INITIALIZER \
-}
-
-struct msg_windowSize {
-    CHAN_FIELD(unsigned, samplesInWindow);
-};
-
-struct msg_self_windowSize {
-    SELF_CHAN_FIELD(unsigned, samplesInWindow);
-};
-#define FIELD_INIT_msg_self_windowSize {\
-    SELF_FIELD_INITIALIZER \
-}
-
-struct msg_warmup {
-    CHAN_FIELD(unsigned, discardedSamplesCount);
-};
-
-struct msg_self_warmup {
-    SELF_CHAN_FIELD(unsigned, discardedSamplesCount);
-};
-#define FIELD_INIT_msg_self_warmup {\
-    SELF_FIELD_INITIALIZER \
-}
-
-struct msg_window {
-    CHAN_FIELD_ARRAY(accelReading, window, ACCEL_WINDOW_SIZE);
-};
-
+#define FIELD_INIT_msg_self_stats { SELF_FIELD_INITIALIZER, SELF_FIELD_INITIALIZER, SELF_FIELD_INITIALIZER, }
+struct msg_train { CHAN_FIELD(unsigned, trainingSetSize); };
+struct msg_self_train { SELF_CHAN_FIELD(unsigned, trainingSetSize); };
+#define FIELD_INIT_msg_self_train { SELF_FIELD_INITIALIZER }
+struct msg_windowSize { CHAN_FIELD(unsigned, samplesInWindow); };
+struct msg_self_windowSize { SELF_CHAN_FIELD(unsigned, samplesInWindow); };
+#define FIELD_INIT_msg_self_windowSize { SELF_FIELD_INITIALIZER }
+struct msg_warmup { CHAN_FIELD(unsigned, discardedSamplesCount); };
+struct msg_self_warmup { SELF_CHAN_FIELD(unsigned, discardedSamplesCount); };
+#define FIELD_INIT_msg_self_warmup { SELF_FIELD_INITIALIZER }
+struct msg_window { CHAN_FIELD_ARRAY(accelReading, window, ACCEL_WINDOW_SIZE); };
 struct msg_model {
-    // TODO: think more about struct types in channels, for now separate arrays
     CHAN_FIELD_ARRAY(features_t, model_stationary, MODEL_SIZE);
     CHAN_FIELD_ARRAY(features_t, model_moving, MODEL_SIZE);
 };
-
-struct msg_mode {
-    CHAN_FIELD(run_mode_t, mode);
-};
-
-struct msg_class {
-    CHAN_FIELD(run_mode_t, class);
-};
-
-struct msg_features {
-    CHAN_FIELD(features_t, features);
-};
-
-struct msg_pinState {
-    CHAN_FIELD(uint8_t, pin_state);
-};
-
-struct msg_self_pinState {
-    SELF_CHAN_FIELD(uint8_t, pin_state);
-};
-#define FIELD_INIT_msg_self_pinState {\
-    SELF_FIELD_INITIALIZER \
-}
-
+struct msg_mode { CHAN_FIELD(run_mode_t, mode); };
+struct msg_class { CHAN_FIELD(run_mode_t, class); };
+struct msg_features { CHAN_FIELD(features_t, features); };
+struct msg_pinState { CHAN_FIELD(uint8_t, pin_state); };
+struct msg_self_pinState { SELF_CHAN_FIELD(uint8_t, pin_state); };
+#define FIELD_INIT_msg_self_pinState { SELF_FIELD_INITIALIZER }
 TASK(1, task_init)
 TASK(2, task_selectMode)
 TASK(3, task_resetStats)
@@ -171,34 +119,24 @@ TASK(8, task_stats)
 TASK(9, task_warmup)
 TASK(10, task_train)
 TASK(11, task_idle)
-
 CHANNEL(task_init, task_classify, msg_model);
 CHANNEL(task_init, task_selectMode, msg_pinState);
-
 CHANNEL(task_selectMode, task_warmup, msg_warmup);
 CHANNEL(task_selectMode, task_featurize, msg_mode);
 CHANNEL(task_selectMode, task_train, msg_class);
 CHANNEL(task_selectMode, task_sample, msg_windowSize);
 SELF_CHANNEL(task_selectMode, msg_self_pinState);
-
 CHANNEL(task_resetStats, task_stats, msg_stats);
 CHANNEL(task_resetStats, task_sample, msg_windowSize);
-
-MULTICAST_CHANNEL(msg_window, ch_sample_window,
-                 task_sample, task_transform, task_featurize);
+MULTICAST_CHANNEL(msg_window, ch_sample_window, task_sample, task_transform, task_featurize);
 SELF_CHANNEL(task_sample, msg_self_windowSize);
 CHANNEL(task_transform, task_featurize, msg_window);
-
 CHANNEL(task_featurize, task_train, msg_features);
 CHANNEL(task_featurize, task_classify, msg_features);
-
 CHANNEL(task_classify, task_stats, msg_class);
-
 SELF_CHANNEL(task_stats, msg_self_stats);
-
 SELF_CHANNEL(task_warmup, msg_self_warmup);
 CHANNEL(task_warmup, task_train, msg_train);
-
 SELF_CHANNEL(task_train, msg_self_train);
 CHANNEL(task_train, task_classify, msg_model);
 
@@ -308,9 +246,7 @@ void task_selectMode()
     uint8_t pin_state = GPIO(PORT_AUX, IN) & (BIT(PIN_AUX_1) | BIT(PIN_AUX_2));
 
     // Don't re-launch training after finishing training
-    uint8_t prev_pin_state = *CHAN_IN2(uint8_t, pin_state,
-                                       CH(task_init, task_selectMode),
-                                       SELF_IN_CH(task_selectMode));
+    uint8_t prev_pin_state = *CHAN_IN2(uint8_t, pin_state, CH(task_init, task_selectMode), SELF_IN_CH(task_selectMode));
     if ((pin_state == MODE_TRAIN_STATIONARY ||
         pin_state == MODE_TRAIN_MOVING) &&
         pin_state == prev_pin_state) {
@@ -323,39 +259,30 @@ void task_selectMode()
 
     switch(pin_state) {
         case MODE_TRAIN_STATIONARY:
-            CHAN_OUT1(unsigned, discardedSamplesCount, zero,
-                      CH(task_selectMode, task_warmup));
+            CHAN_OUT1(unsigned, discardedSamplesCount, zero, CH(task_selectMode, task_warmup));
             mode = MODE_TRAIN_STATIONARY;
-            CHAN_OUT1(run_mode_t, mode, mode,
-                      CH(task_selectMode, task_featurize));
+            CHAN_OUT1(run_mode_t, mode, mode, CH(task_selectMode, task_featurize));
             class = CLASS_STATIONARY;
-            CHAN_OUT1(class_t, class, class,
-                      CH(task_selectMode, task_train));
-            CHAN_OUT1(unsigned, samplesInWindow, zero,
-                      CH(task_selectMode, task_sample));
+            CHAN_OUT1(class_t, class, class, CH(task_selectMode, task_train));
+            CHAN_OUT1(unsigned, samplesInWindow, zero, CH(task_selectMode, task_sample));
 
             TRANSITION_TO(task_warmup);
             break;
 
         case MODE_TRAIN_MOVING:
-            CHAN_OUT1(unsigned, discardedSamplesCount, zero,
-                     CH(task_selectMode, task_warmup));
+            CHAN_OUT1(unsigned, discardedSamplesCount, zero, CH(task_selectMode, task_warmup));
             mode = MODE_TRAIN_MOVING;
-            CHAN_OUT1(run_mode_t, mode, mode,
-                     CH(task_selectMode, task_featurize));
+            CHAN_OUT1(run_mode_t, mode, mode, CH(task_selectMode, task_featurize));
             class = CLASS_MOVING;
-            CHAN_OUT1(class_t, class, class,
-                     CH(task_selectMode, task_train));
-            CHAN_OUT1(unsigned, samplesInWindow, zero,
-                     CH(task_selectMode, task_sample));
+            CHAN_OUT1(class_t, class, class, CH(task_selectMode, task_train));
+            CHAN_OUT1(unsigned, samplesInWindow, zero, CH(task_selectMode, task_sample));
 
             TRANSITION_TO(task_warmup);
             break;
 
         case MODE_RECOGNIZE:
             mode = MODE_RECOGNIZE;
-            CHAN_OUT1(run_mode_t, mode, mode,
-                      CH(task_selectMode, task_featurize));
+            CHAN_OUT1(run_mode_t, mode, mode, CH(task_selectMode, task_featurize));
 
             TRANSITION_TO(task_resetStats);
             break;
@@ -396,21 +323,15 @@ void task_sample()
 
     ACCEL_singleSample(&sample);
 
-    samplesInWindow = *CHAN_IN3(unsigned, samplesInWindow,
-                               CH(task_resetStats, task_sample),
-                               CH(task_selectMode, task_sample),
-                               SELF_IN_CH(task_sample));
+    samplesInWindow = *CHAN_IN3(unsigned, samplesInWindow, CH(task_resetStats, task_sample), CH(task_selectMode, task_sample), SELF_IN_CH(task_sample));
 
-    CHAN_OUT1(accelReading, window[samplesInWindow], sample,
-             MC_OUT_CH(ch_sample_window, task_sample,
-                       task_transform, task_featurize));
+    CHAN_OUT1(accelReading, window[samplesInWindow], sample, MC_OUT_CH(ch_sample_window, task_sample, task_transform, task_featurize));
     samplesInWindow++;
     LOG("sample: sample %u %u %u window %u\r\n",
            sample.x, sample.y, sample.z, samplesInWindow);
 
     if (samplesInWindow < ACCEL_WINDOW_SIZE) {
-        CHAN_OUT1(unsigned, samplesInWindow, samplesInWindow,
-                  SELF_OUT_CH(task_sample));
+        CHAN_OUT1(unsigned, samplesInWindow, samplesInWindow, SELF_OUT_CH(task_sample));
         TRANSITION_TO(task_sample);
     } else {
         const unsigned zero = 0;
@@ -429,9 +350,7 @@ void task_transform()
     accelReading transformedSample;
 
     for (i = 0; i < ACCEL_WINDOW_SIZE; i++) {
-        sample = CHAN_IN1(accelReading, window[i],
-                          MC_IN_CH(ch_sample_window,
-                                   task_sample, task_transform));
+        sample = CHAN_IN1(accelReading, window[i], MC_IN_CH(ch_sample_window, task_sample, task_transform));
 
         if (sample->x < SAMPLE_NOISE_FLOOR ||
             sample->y < SAMPLE_NOISE_FLOOR ||
@@ -444,8 +363,7 @@ void task_transform()
             transformedSample.z = (sample->z > SAMPLE_NOISE_FLOOR)
                                    ? sample->z : 0;
 
-            CHAN_OUT1(accelReading, window[i], transformedSample,
-                      CH(task_transform, task_featurize));
+            CHAN_OUT1(accelReading, window[i], transformedSample, CH(task_transform, task_featurize));
         }
     }
     TRANSITION_TO(task_featurize);
@@ -468,9 +386,7 @@ void task_featurize()
    stddev.x = stddev.y = stddev.z = 0;
    int i;
    for (i = 0; i < ACCEL_WINDOW_SIZE; i++) {
-       reading = CHAN_IN2(accelReading, window[i],
-                          MC_IN_CH(ch_sample_window, task_sample, task_featurize),
-                          CH(task_transform, task_featurize));
+       reading = CHAN_IN2(accelReading, window[i], MC_IN_CH(ch_sample_window, task_sample, task_featurize), CH(task_transform, task_featurize));
        mean.x += reading->x;
        mean.y += reading->y;
        mean.z += reading->z;
@@ -486,9 +402,7 @@ void task_featurize()
  
    for (i = 0; i < ACCEL_WINDOW_SIZE; i++) {
        // TODO: room for optimization: promotion to volatile (since same vals read above)
-       reading = CHAN_IN2(accelReading, window[i],
-                          MC_IN_CH(ch_sample_window, task_sample, task_featurize),
-                          CH(task_transform, task_featurize));
+       reading = CHAN_IN2(accelReading, window[i], MC_IN_CH(ch_sample_window, task_sample, task_featurize), CH(task_transform, task_featurize));
        stddev.x += reading->x > mean.x ? reading->x - mean.x
                                       : mean.x - reading->x;
        stddev.y += reading->y > mean.y ? reading->y - mean.y
@@ -519,13 +433,11 @@ void task_featurize()
    switch (mode) {
        case MODE_TRAIN_STATIONARY:
        case MODE_TRAIN_MOVING:
-           CHAN_OUT1(features_t, features, features,
-                     CH(task_featurize, task_train));
+           CHAN_OUT1(features_t, features, features, CH(task_featurize, task_train));
            TRANSITION_TO(task_train);
            break;
         case MODE_RECOGNIZE:
-           CHAN_OUT1(features_t, features, features,
-                     CH(task_featurize, task_classify));
+           CHAN_OUT1(features_t, features, features, CH(task_featurize, task_classify));
            TRANSITION_TO(task_classify);
            break;
         default:
@@ -546,8 +458,7 @@ void task_classify() {
 
    LOG("classify\r\n");
   
-    features = *CHAN_IN1(features_t, features,
-                         CH(task_featurize, task_classify));
+    features = *CHAN_IN1(features_t, features, CH(task_featurize, task_classify));
 
     // TODO: does it make sense to get a reference to the whole model at once?
 
@@ -556,9 +467,7 @@ void task_classify() {
     stddevmag = features.stddevmag;
   
     for (i = 0; i < MODEL_SIZE; ++i) {
-        model_features = *CHAN_IN2(features_t, model_stationary[i],
-                                   CH(task_init, task_classify),
-                                   CH(task_train, task_classify));
+        model_features = *CHAN_IN2(features_t, model_stationary[i], CH(task_init, task_classify), CH(task_train, task_classify));
         long int stat_mean_err = (model_features.meanmag > meanmag)
             ? (model_features.meanmag - meanmag)
             : (meanmag - model_features.meanmag);
@@ -567,9 +476,7 @@ void task_classify() {
             ? (model_features.stddevmag - stddevmag)
             : (stddevmag - model_features.stddevmag);
 
-        model_features = *CHAN_IN2(features_t, model_moving[i],
-                                   CH(task_init, task_classify),
-                                   CH(task_train, task_classify));
+        model_features = *CHAN_IN2(features_t, model_moving[i], CH(task_init, task_classify), CH(task_train, task_classify));
         long int move_mean_err = (model_features.meanmag > meanmag)
             ? (model_features.meanmag - meanmag)
             : (meanmag - model_features.meanmag);
@@ -606,9 +513,7 @@ void task_stats()
 
     LOG("stats\r\n");
 
-    totalCount = *CHAN_IN2(unsigned, totalCount,
-                           CH(task_resetStats, task_stats),
-                           SELF_IN_CH(task_stats));
+    totalCount = *CHAN_IN2(unsigned, totalCount, CH(task_resetStats, task_stats), SELF_IN_CH(task_stats));
 
     totalCount++;
     LOG("stats: total %u\r\n", totalCount);
@@ -624,13 +529,10 @@ void task_stats()
             blink(CLASSIFY_BLINKS, CLASSIFY_BLINK_DURATION, LED1);
 #endif //SHOW_RESULT_ON_LEDS
 
-            movingCount = *CHAN_IN2(unsigned, movingCount,
-                                    CH(task_resetStats, task_stats),
-                                    SELF_IN_CH(task_stats));
+            movingCount = *CHAN_IN2(unsigned, movingCount, CH(task_resetStats, task_stats), SELF_IN_CH(task_stats));
             movingCount++;
             LOG("stats: moving %u\r\n", movingCount);
-            CHAN_OUT1(unsigned, movingCount, movingCount,
-                      SELF_OUT_CH(task_stats));
+            CHAN_OUT1(unsigned, movingCount, movingCount, SELF_OUT_CH(task_stats));
 
             break;
         case CLASS_STATIONARY:
@@ -639,13 +541,10 @@ void task_stats()
             blink(CLASSIFY_BLINKS, CLASSIFY_BLINK_DURATION, LED2);
 #endif //SHOW_RESULT_ON_LEDS
 
-            stationaryCount = *CHAN_IN2(unsigned, stationaryCount,
-                                        CH(task_resetStats, task_stats),
-                                        SELF_IN_CH(task_stats));
+            stationaryCount = *CHAN_IN2(unsigned, stationaryCount, CH(task_resetStats, task_stats), SELF_IN_CH(task_stats));
             stationaryCount++;
             LOG("stats: stationary %u\r\n", stationaryCount);
-            CHAN_OUT1(unsigned, stationaryCount, stationaryCount,
-                      SELF_OUT_CH(task_stats));
+            CHAN_OUT1(unsigned, stationaryCount, stationaryCount, SELF_OUT_CH(task_stats));
 
             break;
     }
@@ -656,14 +555,10 @@ void task_stats()
         // acquisition run: we're saving 50% reads all other times.
         switch (class) {
             case CLASS_MOVING:
-                stationaryCount = *CHAN_IN2(unsigned, stationaryCount,
-                                            CH(task_resetStats, task_stats),
-                                            SELF_IN_CH(task_stats));
+                stationaryCount = *CHAN_IN2(unsigned, stationaryCount, CH(task_resetStats, task_stats), SELF_IN_CH(task_stats));
                 break;
             case CLASS_STATIONARY:
-                movingCount = *CHAN_IN2(unsigned, movingCount,
-                                        CH(task_resetStats, task_stats),
-                                        SELF_IN_CH(task_stats));
+                movingCount = *CHAN_IN2(unsigned, movingCount, CH(task_resetStats, task_stats), SELF_IN_CH(task_stats));
                 break;
         }
 
@@ -699,9 +594,7 @@ void task_warmup()
     blink(WARMUP_BLINKS, WARMUP_BLINK_DURATION, LED1 | LED2);
 #endif
 
-    discardedSamplesCount = *CHAN_IN2(unsigned, discardedSamplesCount,
-                                     CH(task_selectMode, task_warmup),
-                                     SELF_IN_CH(task_warmup));
+    discardedSamplesCount = *CHAN_IN2(unsigned, discardedSamplesCount, CH(task_selectMode, task_warmup), SELF_IN_CH(task_warmup));
 
     if (discardedSamplesCount < NUM_WARMUP_SAMPLES) {
 
@@ -714,8 +607,7 @@ void task_warmup()
     
         discardedSamplesCount++;
         LOG("warmup: discarded %u\r\n", discardedSamplesCount);
-        CHAN_OUT1(unsigned, discardedSamplesCount, discardedSamplesCount,
-                  SELF_OUT_CH(task_warmup));
+        CHAN_OUT1(unsigned, discardedSamplesCount, discardedSamplesCount, SELF_OUT_CH(task_warmup));
         TRANSITION_TO(task_warmup);
     } else {
         const unsigned zero = 0;
@@ -744,20 +636,17 @@ void task_train()
 
     switch (class) {
         case CLASS_STATIONARY:
-            CHAN_OUT1(features_t, model_stationary[trainingSetSize], features,
-                      CH(task_train, task_classify));
+            CHAN_OUT1(features_t, model_stationary[trainingSetSize], features, CH(task_train, task_classify));
             break;
         case CLASS_MOVING:
-            CHAN_OUT1(features_t, model_moving[trainingSetSize], features,
-                      CH(task_train, task_classify));
+            CHAN_OUT1(features_t, model_moving[trainingSetSize], features, CH(task_train, task_classify));
             break;
     }
 
     trainingSetSize++;
     LOG("train: class %u count %u/%u\r\n", class,
            trainingSetSize, MODEL_SIZE);
-    CHAN_OUT1(unsigned, trainingSetSize, trainingSetSize,
-              SELF_IN_CH(task_train));
+    CHAN_OUT1(unsigned, trainingSetSize, trainingSetSize, SELF_IN_CH(task_train));
 
     if (trainingSetSize < MODEL_SIZE) {
         TRANSITION_TO(task_sample);
