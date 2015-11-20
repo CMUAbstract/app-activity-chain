@@ -327,8 +327,7 @@ void task_sample()
 
     CHAN_OUT1(accelReading, window[samplesInWindow], sample, MC_OUT_CH(ch_sample_window, task_sample, task_transform, task_featurize));
     samplesInWindow++;
-    LOG("sample: sample %u %u %u window %u\r\n",
-           sample.x, sample.y, sample.z, samplesInWindow);
+    LOG("sample: sample %u %u %u window %u\r\n", sample.x, sample.y, sample.z, samplesInWindow);
 
     if (samplesInWindow < ACCEL_WINDOW_SIZE) {
         CHAN_OUT1(unsigned, samplesInWindow, samplesInWindow, SELF_OUT_CH(task_sample));
@@ -427,8 +426,7 @@ void task_featurize()
  
    mode = *CHAN_IN1(run_mode_t, mode, CH(task_selectMode, task_featurize));
 
-   LOG("featurize: features: mean %u stddev %u\r\n",
-           features.meanmag, features.stddevmag);
+   LOG("featurize: features: mean %u stddev %u\r\n", features.meanmag, features.stddevmag);
 
    switch (mode) {
        case MODE_TRAIN_STATIONARY:
@@ -644,8 +642,7 @@ void task_train()
     }
 
     trainingSetSize++;
-    LOG("train: class %u count %u/%u\r\n", class,
-           trainingSetSize, MODEL_SIZE);
+    LOG("train: class %u count %u/%u\r\n", class, trainingSetSize, MODEL_SIZE);
     CHAN_OUT1(unsigned, trainingSetSize, trainingSetSize, SELF_IN_CH(task_train));
 
     if (trainingSetSize < MODEL_SIZE) {
